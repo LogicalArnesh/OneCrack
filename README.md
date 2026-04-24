@@ -4,7 +4,7 @@ A professional academic testing platform built with Next.js, Firebase, and Genki
 
 ## 🚀 How to push to GitHub
 
-Run these commands one by one in your terminal (do **not** prefix them with `bash`):
+Run these commands one by one in your terminal:
 
 1. **Initialize Git**:
    ```bash
@@ -28,9 +28,16 @@ Run these commands one by one in your terminal (do **not** prefix them with `bas
 
 5. **Push to Main**:
    ```bash
-   git branch -M main
    git push -u origin main
    ```
+
+## 🔄 How to push UPDATES
+
+If you have already pushed once and want to update the repo with new fixes:
+
+1. `git add .`
+2. `git commit -m "Fix netlify.toml and update dependencies"`
+3. `git push origin main`
 
 ## 🌐 Deployment to Netlify
 
