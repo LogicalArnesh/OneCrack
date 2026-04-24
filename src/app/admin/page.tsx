@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -7,16 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { adminAutoImportQuestions } from '@/ai/flows/admin-auto-import-questions';
 import { useToast } from '@/hooks/use-toast';
 import { FileUp, Plus, Database, Wand2, Loader2, Trash2 } from 'lucide-react';
-import { store } from '@/lib/store';
+import { useFirestore, useUser } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { Question, ClassLevel, Test } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const { user } = useUser();
+  const db = useFirestore();
   const [importing, setImporting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   
   const [testData, setTestData] = useState({
@@ -43,7 +49,6 @@ export default function AdminDashboard() {
           adminInstructions: "Extract all test questions with correct options and explanations."
         });
         
-        // Map AI output to our local Question type
         const newQuestions: Question[] = result.map(q => ({
           ...q,
           classLevel: q.classLevel as ClassLevel
@@ -62,20 +67,23 @@ export default function AdminDashboard() {
       toast({
         variant: "destructive",
         title: "Import Failed",
-        description: "Could not process the file. Check console for details.",
+        description: "Could not process the file.",
       });
       setImporting(false);
     }
   };
 
-  const createTest = () => {
+  const createTest = async () => {
+    if (!user) return;
     if (importedQuestions.length === 0) {
       toast({ variant: "destructive", title: "Error", description: "Add some questions first." });
       return;
     }
 
+    setIsPublishing(true);
+    const testId = uuidv4();
     const newTest: Test = {
-      id: uuidv4(),
+      id: testId,
       title: testData.title || "Untitled Test",
       description: `Test for Class ${testData.classLevel}`,
       subject: testData.subject || "Mixed",
@@ -88,10 +96,17 @@ export default function AdminDashboard() {
       isReleased: true
     };
 
-    store.saveTest(newTest);
-    toast({ title: "Test Created", description: "Successfully added to the portal." });
-    setImportedQuestions([]);
-    setTestData({ title: '', subject: '', classLevel: '12', time: 60, marks: 4, neg: 1 });
+    try {
+      await setDoc(doc(db, 'tests', testId), newTest);
+      toast({ title: "Test Created", description: "Successfully published to the portal." });
+      setImportedQuestions([]);
+      setTestData({ title: '', subject: '', classLevel: '12', time: 60, marks: 4, neg: 1 });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Publish Failed", description: "Database error." });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -188,7 +203,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs font-bold uppercase text-muted-foreground">Class</Label>
-                        <Select onValueChange={v => setTestData({...testData, classLevel: v as ClassLevel})}>
+                        <Select value={testData.classLevel} onValueChange={v => setTestData({...testData, classLevel: v as ClassLevel})}>
                           <SelectTrigger className="rounded-xl h-10 bg-muted/30">
                             <SelectValue placeholder="12" />
                           </SelectTrigger>
@@ -214,8 +229,9 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                    <Button onClick={createTest} className="w-full h-11 rounded-xl font-bold mt-4 shadow-lg shadow-primary/20">
-                      <Plus className="w-4 h-4 mr-2" /> Publish Test
+                    <Button onClick={createTest} disabled={isPublishing} className="w-full h-11 rounded-xl font-bold mt-4 shadow-lg shadow-primary/20">
+                      {isPublishing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                      Publish Test
                     </Button>
                   </CardContent>
                 </Card>
@@ -223,7 +239,7 @@ export default function AdminDashboard() {
                 <div className="p-4 rounded-2xl bg-accent/5 border border-accent/20">
                   <h4 className="font-headline font-bold text-accent mb-2">Pro Tip</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    AI works best when the document has clear question numbers and options labeled A, B, C, D. Ensure all images are properly referenced in text.
+                    AI works best when the document has clear question numbers and options labeled A, B, C, D.
                   </p>
                 </div>
               </div>
@@ -243,7 +259,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-20 text-muted-foreground">
-                  Question filtering and management interface will appear here as the bank grows.
+                  The central question repository is syncing with Firestore.
                 </div>
               </CardContent>
             </Card>

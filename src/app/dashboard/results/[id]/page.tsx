@@ -1,11 +1,13 @@
+
 "use client";
 
-import React, { use, useState, useEffect } from 'react';
+import React, { use } from 'react';
 import PortalLayout from '@/components/dashboard/PortalLayout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { store } from '@/lib/store';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { TestResult, Test } from '@/lib/types';
 import { 
   CheckCircle2, 
@@ -15,41 +17,52 @@ import {
   Download, 
   TrendingUp, 
   BarChart3,
-  Calendar,
-  Hash,
   ShieldCheck,
-  ChevronRight,
-  Info
+  Info,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as ChartTooltip,
-  Legend
+  Legend,
+  Tooltip as ChartTooltip
 } from 'recharts';
+import { cn } from '@/lib/utils';
 
 export default function ResultDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [result, setResult] = useState<TestResult | null>(null);
-  const [test, setTest] = useState<Test | null>(null);
+  const db = useFirestore();
+  const { user } = useUser();
 
-  useEffect(() => {
-    const foundResult = store.getResults().find(r => r.id === id);
-    if (foundResult) {
-      setResult(foundResult);
-      const foundTest = store.getTests().find(t => t.id === foundResult.testId);
-      if (foundTest) setTest(foundTest);
-    }
-  }, [id]);
+  const resultRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid, 'testAttempts', id) : null, [db, user, id]);
+  const { data: result, isLoading: isResultLoading } = useDoc<TestResult>(resultRef);
 
-  if (!result || !test) return null;
+  const testRef = useMemoFirebase(() => result ? doc(db, 'tests', result.testId) : null, [db, result]);
+  const { data: test, isLoading: isTestLoading } = useDoc<Test>(testRef);
+
+  if (isResultLoading || isTestLoading) {
+    return (
+      <PortalLayout>
+        <div className="min-h-[400px] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </PortalLayout>
+    );
+  }
+
+  if (!result || !test) {
+    return (
+      <PortalLayout>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+          <h2 className="text-xl font-bold">Evaluation Result Not Found</h2>
+        </div>
+      </PortalLayout>
+    );
+  }
 
   const scorePercentage = Math.round((result.totalScore / result.maxScore) * 100);
   
@@ -58,11 +71,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
     { name: 'Wrong', value: result.wrongCount, color: '#ef4444' },
     { name: 'Skipped', value: result.skippedCount, color: '#94a3b8' },
   ];
-
-  const handleDownload = () => {
-    const filename = `${store.getCurrentUser()?.name || 'student'}_${test.title.replace(/\s+/g, '_')}_${new Date(result.timestamp).toLocaleDateString().replace(/\//g, '-')}.pdf`;
-    alert(`Initiating download for: ${filename}\n(PDF Generation module active)`);
-  };
 
   return (
     <PortalLayout>
@@ -76,7 +84,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
             <h1 className="text-4xl font-headline font-bold">{test.title}</h1>
             <p className="text-muted-foreground">Comprehensive performance report for {test.subject}</p>
           </div>
-          <Button onClick={handleDownload} className="rounded-xl h-12 px-6 font-bold gap-2 shadow-lg shadow-primary/20">
+          <Button className="rounded-xl h-12 px-6 font-bold gap-2 shadow-lg shadow-primary/20">
             <Download className="w-5 h-5" /> Download Report PDF
           </Button>
         </div>
@@ -181,47 +189,11 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                  <h4 className="font-bold text-sm uppercase">Secure Verification</h4>
                </div>
                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                 Digitally signed evaluation result generated on {new Date(result.timestamp).toLocaleString()}. Authenticity verified by OneCrack Secure Vault.
+                 Digitally signed evaluation result generated on {new Date(result.timestamp).toLocaleString()}. Verified by OneCrack Secure Vault.
                </p>
             </div>
           </div>
         </div>
-
-        <Card className="rounded-3xl border-border bg-card overflow-hidden">
-          <CardHeader className="bg-muted/30 border-b border-border">
-            <CardTitle className="font-headline">Section-wise Performance</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/50 text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
-                  <tr>
-                    <th className="px-6 py-4">Section Name</th>
-                    <th className="px-6 py-4 text-center">Questions</th>
-                    <th className="px-6 py-4 text-center">Score</th>
-                    <th className="px-6 py-4 text-center">Time Spent</th>
-                    <th className="px-6 py-4 text-center">Avg/Q</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {result.subjectBreakdown.map((sub, i) => (
-                    <tr key={i} className="hover:bg-muted/20 transition-colors">
-                      <td className="px-6 py-4 font-bold">{sub.subject}</td>
-                      <td className="px-6 py-4 text-center font-medium">{test.questions.length}</td>
-                      <td className="px-6 py-4 text-center">
-                        <Badge variant="outline" className="border-primary/20 text-primary font-bold">
-                          {sub.score} / {sub.maxScore}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-center font-medium">{Math.floor(sub.timeTakenSeconds / 60)}m {sub.timeTakenSeconds % 60}s</td>
-                      <td className="px-6 py-4 text-center text-muted-foreground font-medium">{Math.round(sub.avgTimePerQuestionSeconds)}s</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
 
         <div className="space-y-4 pt-12">
           <div className="flex items-center justify-between">
@@ -238,7 +210,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                 <div key={q.id} className={cn(
                   "p-6 rounded-3xl border-2 transition-all",
                   !attempt?.selectedOption ? "border-border bg-card/50" :
-                  isCorrect ? "border-green-500/20 bg-green-500/5 shadow-lg shadow-green-500/5" : "border-red-500/20 bg-red-500/5 shadow-lg shadow-red-500/5"
+                  isCorrect ? "border-green-500/20 bg-green-500/5" : "border-red-500/20 bg-red-500/5"
                 )}>
                    <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-center gap-3">
@@ -286,27 +258,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
             })}
           </div>
         </div>
-
-        <footer className="pt-20 border-t border-border space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <h4 className="font-headline font-bold text-lg text-primary">OneCrack Test Portal</h4>
-              <p className="text-xs text-muted-foreground max-w-sm">
-                Providing standard evaluation metrics and AI-driven insights for student performance tracking. This report is automatically generated and digitally signed.
-              </p>
-            </div>
-            <div className="flex flex-col md:items-end justify-center space-y-1">
-               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verified By OneCrack Secure Vault</p>
-               <div className="flex items-center gap-2 text-primary font-headline font-bold">
-                 <ShieldCheck className="w-5 h-5" /> 
-                 AUTHENTICITY GUARANTEED
-               </div>
-            </div>
-          </div>
-          <div className="text-center text-[10px] text-muted-foreground uppercase tracking-[0.2em] pt-4">
-            &copy; {new Date().getFullYear()} OneCrack Test Portal • Copyrights & Rights Reserved
-          </div>
-        </footer>
       </div>
     </PortalLayout>
   );

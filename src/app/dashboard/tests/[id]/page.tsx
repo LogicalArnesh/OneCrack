@@ -1,8 +1,10 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { store } from '@/lib/store';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, addDoc, collection } from 'firebase/firestore';
 import { Test, Question, Attempt, TestResult } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +20,8 @@ import {
   AlertCircle,
   HelpCircle,
   Clock,
-  SendHorizontal
+  SendHorizontal,
+  Loader2
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
@@ -28,46 +31,41 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { toast } = useToast();
   const { id } = use(params);
+  const db = useFirestore();
+  const { user } = useUser();
   
-  const [test, setTest] = useState<Test | null>(null);
+  const testRef = useMemoFirebase(() => doc(db, 'tests', id), [db, id]);
+  const { data: test, isLoading: isTestLoading } = useDoc<Test>(testRef);
+
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [attempts, setAttempts] = useState<Record<string, Attempt>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [user, setUser] = useState(store.getCurrentUser());
 
   useEffect(() => {
-    const foundTest = store.getTests().find(t => t.id === id);
-    if (!foundTest) {
-      router.push('/dashboard/tests');
-      return;
+    if (test) {
+      setTimeLeft(test.totalTimeMinutes * 60);
+      const initialAttempts: Record<string, Attempt> = {};
+      test.questions.forEach(q => {
+        initialAttempts[q.id] = {
+          questionId: q.id,
+          status: 'not-visited',
+          timeTakenSeconds: 0
+        };
+      });
+      setAttempts(initialAttempts);
     }
-    setTest(foundTest);
-    setTimeLeft(foundTest.totalTimeMinutes * 60);
+  }, [test]);
 
-    // Initialize attempts
-    const initialAttempts: Record<string, Attempt> = {};
-    foundTest.questions.forEach(q => {
-      initialAttempts[q.id] = {
-        questionId: q.id,
-        status: 'not-visited',
-        timeTakenSeconds: 0
-      };
-    });
-    setAttempts(initialAttempts);
-  }, [id, router]);
-
-  // Timer logic
   useEffect(() => {
-    if (timeLeft <= 0) {
-      if (test) finishTest();
+    if (timeLeft <= 0 && test && timeLeft > 0) {
+      finishTest();
       return;
     }
-    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    const timer = setInterval(() => setTimeLeft(prev => Math.max(0, prev - 1)), 1000);
     return () => clearInterval(timer);
   }, [timeLeft, test]);
 
-  // Question navigation and status tracking
   useEffect(() => {
     if (!test || !test.questions[currentIdx]) return;
     const qId = test.questions[currentIdx].id;
@@ -104,14 +102,13 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
     }));
   };
 
-  const finishTest = useCallback(() => {
-    if (!test || !user) return;
+  const finishTest = useCallback(async () => {
+    if (!test || !user || isSubmitting) return;
     setIsSubmitting(true);
 
     const submissionId = uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase();
     const finalAttempts = Object.values(attempts);
     
-    // Calculate Score
     let totalScore = 0;
     let correct = 0;
     let wrong = 0;
@@ -132,10 +129,9 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       }
     });
 
-    const result: TestResult = {
-      id: uuidv4(),
+    const result: Omit<TestResult, 'id'> = {
       testId: test.id,
-      userId: user.id,
+      userId: user.uid,
       submissionId,
       timestamp: new Date().toISOString(),
       attempts: finalAttempts,
@@ -154,12 +150,35 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       }]
     };
 
-    store.saveResult(result);
-    toast({ title: "Test Submitted", description: "Evaluation completed successfully." });
-    router.push(`/dashboard/results/${result.id}`);
-  }, [test, attempts, timeLeft, user, router]);
+    try {
+      const resultsCol = collection(db, 'users', user.uid, 'testAttempts');
+      const docRef = await addDoc(resultsCol, result);
+      toast({ title: "Test Submitted", description: "Evaluation completed successfully." });
+      router.push(`/dashboard/results/${docRef.id}`);
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Submission Failed", description: "Check connection." });
+      setIsSubmitting(false);
+    }
+  }, [test, attempts, timeLeft, user, router, db, isSubmitting]);
 
-  if (!test || !user) return null;
+  if (isTestLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!test || !user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+        <h2 className="text-xl font-bold">Test Not Found</h2>
+        <Button variant="link" onClick={() => router.push('/dashboard/tests')}>Back to Tests</Button>
+      </div>
+    );
+  }
 
   const currentQ = test.questions[currentIdx];
   const formatTime = (s: number) => {
@@ -170,7 +189,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-hidden">
-      {/* Test Header */}
       <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 z-50">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center font-bold text-white text-xl">O</div>
@@ -182,20 +200,24 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
 
         <div className="flex items-center gap-6">
           <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all animate-pulse",
-            timeLeft < 300 ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-primary/20 bg-primary/5 text-primary"
+            "flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all",
+            timeLeft < 300 ? "border-destructive/50 bg-destructive/10 text-destructive animate-pulse" : "border-primary/20 bg-primary/5 text-primary"
           )}>
             <Timer className="w-5 h-5" />
             <span className="text-lg font-headline font-bold">{formatTime(timeLeft)}</span>
           </div>
-          <Button onClick={() => { if(confirm("Are you sure you want to submit?")) finishTest(); }} className="rounded-xl font-bold bg-primary hover:bg-primary/90 px-6 gap-2">
-            Finish Test <SendHorizontal className="w-4 h-4" />
+          <Button 
+            onClick={() => { if(confirm("Are you sure you want to submit?")) finishTest(); }} 
+            disabled={isSubmitting}
+            className="rounded-xl font-bold bg-primary hover:bg-primary/90 px-6 gap-2"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <SendHorizontal className="w-4 h-4" />}
+            Finish Test
           </Button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Question Display */}
         <div className="flex-1 overflow-y-auto p-8 relative">
           <div className="max-w-3xl mx-auto space-y-8">
             <div className="flex items-center justify-between border-b border-border pb-4">
@@ -292,22 +314,20 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
-        {/* Right Panel: Navigation Dashboard */}
         <aside className="w-80 border-l border-border bg-card flex flex-col p-6 space-y-6">
           <div className="p-4 rounded-2xl bg-secondary/50 border border-border flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
               <UserIcon className="w-5 h-5" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate leading-tight">{user.name}</p>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter mt-1">UID: {user.uid}</p>
+              <p className="text-sm font-bold truncate leading-tight">{user.displayName || 'Student'}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter mt-1">ID: {user.uid.slice(0, 8)}</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Question Map</h3>
-               <Badge variant="outline" className="text-[10px] uppercase font-bold">{test.subject}</Badge>
             </div>
             
             <div className="grid grid-cols-4 gap-2">
@@ -342,20 +362,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
               </div>
               <div className="flex items-center gap-2 text-accent">
                 <div className="w-3 h-3 rounded-sm bg-accent" /> Review
-              </div>
-              <div className="flex items-center gap-2 text-foreground/50">
-                <div className="w-3 h-3 rounded-sm bg-muted/20" /> Unvisited
-              </div>
-              <div className="flex items-center gap-2 text-foreground">
-                <div className="w-3 h-3 rounded-sm bg-muted/50 border border-accent/30" /> Visited
-              </div>
-            </div>
-            
-            <div className="p-4 rounded-2xl bg-muted/20 border border-border flex items-center gap-3 mt-4">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <div>
-                <p className="text-[10px] font-bold uppercase text-muted-foreground">Current Time</p>
-                <p className="text-sm font-bold">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
           </div>
