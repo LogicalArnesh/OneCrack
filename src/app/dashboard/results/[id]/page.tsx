@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { TestResult, Test } from '@/lib/types';
+import { TestResult, Test, User as PortalUser } from '@/lib/types';
 import { APP_CONFIG } from '@/lib/config';
 import { 
   CheckCircle2, 
@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { sendTestReportEmail } from '@/app/actions/email-actions';
 
 export default function ResultDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -46,21 +47,52 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
   const { user } = useUser();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const userRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid) : null, [db, user]);
+  const { data: profile } = useDoc<PortalUser>(userRef);
+
   const resultRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid, 'testAttempts', id) : null, [db, user, id]);
   const { data: result, isLoading: isResultLoading } = useDoc<TestResult>(resultRef);
 
   const testRef = useMemoFirebase(() => result ? doc(db, 'tests', result.testId) : null, [db, result]);
   const { data: test, isLoading: isTestLoading } = useDoc<Test>(testRef);
 
-  const handleSendEmail = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+  const handleSendEmail = async () => {
+    if (!profile?.email) {
       toast({
-        title: "Evaluation Sent",
-        description: `A digital copy of this report was sent from ${APP_CONFIG.EMAILS.REPORTS} to your registered inbox.`,
+        variant: "destructive",
+        title: "No Email Linked",
+        description: "Please update your profile with a valid email to receive reports.",
       });
-    }, 1500);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const success = await sendTestReportEmail(profile.email, profile.name, {
+        testTitle: test?.title || 'Test Attempt',
+        score: result?.totalScore,
+        maxScore: result?.maxScore,
+        percentage: Math.round((result?.totalScore || 0) / (result?.maxScore || 1) * 100),
+        submissionId: result?.submissionId
+      });
+
+      if (success) {
+        toast({
+          title: "Report Sent",
+          description: `Analysis successfully dispatched to ${profile.email}.`,
+        });
+      } else {
+        throw new Error('Mail server error');
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Dispatch Failed",
+        description: "Could not send email at this time.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isResultLoading || isTestLoading) {
@@ -129,7 +161,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
             </Button>
             <Button onClick={handleSendEmail} disabled={isProcessing} className="rounded-2xl h-12 px-8 font-bold gap-2 shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-transform">
               {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
-              Email Analysis
+              Email Report
             </Button>
           </div>
         </div>

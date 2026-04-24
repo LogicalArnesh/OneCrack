@@ -14,7 +14,8 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { ClassLevel, Subject } from '@/lib/types';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Eye, EyeOff, Info, Mail } from 'lucide-react';
+import { sendWelcomeEmail } from '@/app/actions/email-actions';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    loginUid: '',
     passcode: '',
     confirmPasscode: '',
     classLevel: '' as ClassLevel,
@@ -33,6 +35,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,20 +48,33 @@ export default function RegisterPage() {
       return;
     }
 
+    if (formData.loginUid.length < 3) {
+      setError('Login UID must be at least 3 characters.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.passcode);
+      // If email is not provided, use a virtual one for Firebase Auth
+      const authEmail = formData.email || `${formData.loginUid}@onecrack.internal`;
+      const userCredential = await createUserWithEmailAndPassword(auth, authEmail, formData.passcode);
       const user = userCredential.user;
 
       // Create Firestore profile
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         name: formData.name,
-        email: formData.email,
+        email: formData.email || null,
+        loginUid: formData.loginUid.toLowerCase(),
         classLevel: formData.classLevel,
         subjectPreference: formData.subjectPreference || null,
         registrationDate: new Date().toISOString(),
-        loginUid: formData.email.split('@')[0], // Simplified login UID for portal
       });
+
+      // Send welcome email if provided
+      if (formData.email) {
+        await sendWelcomeEmail(formData.email, formData.name, formData.loginUid);
+      }
 
       setSuccess(true);
       setTimeout(() => {
@@ -66,7 +82,11 @@ export default function RegisterPage() {
       }, 2000);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Registration failed. Please try again.');
+      if (err.code === 'auth/email-already-in-use') {
+        setError('This email or UID is already registered.');
+      } else {
+        setError(err.message || 'Registration failed. Please try again.');
+      }
       setLoading(false);
     }
   };
@@ -89,18 +109,17 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout title="Create Account" subtitle="Join the professional testing environment">
-      <form onSubmit={handleRegister} className="space-y-5">
+      <form onSubmit={handleRegister} className="space-y-4">
         {error && (
           <Alert variant="destructive" className="rounded-xl">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">Full Name</Label>
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Full Name</Label>
             <Input
-              id="name"
               placeholder="Your full name"
               className="rounded-xl h-10 bg-muted/30"
               value={formData.name}
@@ -110,21 +129,42 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="email" className="text-xs uppercase font-bold text-muted-foreground">Email Address</Label>
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Custom Login UID</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="student@example.com"
-              className="rounded-xl h-10 bg-muted/30"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="Choose a unique ID (e.g. arnesh99)"
+              className="rounded-xl h-10 bg-muted/30 font-mono"
+              value={formData.loginUid}
+              onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
               required
             />
           </div>
 
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Email Address (Optional)</Label>
+              <Badge variant="outline" className="text-[8px] h-4 py-0 border-primary/20 text-primary">RECOMMENDED</Badge>
+            </div>
+            <div className="relative">
+              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="email"
+                placeholder="student@example.com"
+                className="pl-10 rounded-xl h-10 bg-muted/30"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div className="flex items-start gap-1.5 p-2 rounded-lg bg-primary/5 border border-primary/10 mt-1">
+              <Info className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                Recommended for password recovery and receiving automated digital test reports.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="class" className="text-xs uppercase font-bold text-muted-foreground">Current Class</Label>
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Current Class</Label>
               <Select onValueChange={(v) => setFormData({...formData, classLevel: v as ClassLevel})} required>
                 <SelectTrigger className="rounded-xl h-10 bg-muted/30">
                   <SelectValue placeholder="Select" />
@@ -138,7 +178,7 @@ export default function RegisterPage() {
               </Select>
             </div>
              <div className="space-y-1">
-              <Label className="text-xs uppercase font-bold text-muted-foreground">Stream</Label>
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Stream</Label>
               <Select onValueChange={(v) => setFormData({...formData, subjectPreference: v as Subject})}>
                 <SelectTrigger className="rounded-xl h-10 bg-muted/30">
                   <SelectValue placeholder="Select" />
@@ -154,22 +194,31 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="pass" className="text-xs uppercase font-bold text-muted-foreground">Passcode</Label>
-              <Input
-                id="pass"
-                type="password"
-                placeholder="6+ characters"
-                className="rounded-xl h-10 bg-muted/30"
-                value={formData.passcode}
-                onChange={(e) => setFormData({...formData, passcode: e.target.value})}
-                required
-              />
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Passcode</Label>
+              <div className="relative">
+                <Input
+                  type={showPass ? "text" : "password"}
+                  placeholder="6+ chars"
+                  className="rounded-xl h-10 bg-muted/30 pr-10"
+                  value={formData.passcode}
+                  onChange={(e) => setFormData({...formData, passcode: e.target.value})}
+                  required
+                />
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1 h-8 w-8 text-muted-foreground"
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="cpass" className="text-xs uppercase font-bold text-muted-foreground">Confirm</Label>
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Confirm</Label>
               <Input
-                id="cpass"
-                type="password"
+                type={showPass ? "text" : "password"}
                 className="rounded-xl h-10 bg-muted/30"
                 value={formData.confirmPasscode}
                 onChange={(e) => setFormData({...formData, confirmPasscode: e.target.value})}
@@ -179,15 +228,15 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-11 text-lg font-semibold rounded-xl mt-4" disabled={loading}>
+        <Button type="submit" className="w-full h-11 text-lg font-semibold rounded-xl mt-2" disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? 'Processing...' : 'Complete Registration'}
+          {loading ? 'Processing...' : 'Register'}
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-xs text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-primary font-semibold hover:underline">
-            Login here
+          <Link href="/auth/login" className="text-primary font-bold hover:underline">
+            Login
           </Link>
         </p>
       </form>
