@@ -32,23 +32,20 @@ Run these commands one by one in your terminal:
    git push -u origin main
    ```
 
-## 🔄 How to push UPDATES
-
-If you have already pushed once and want to update the repo with new fixes:
-
-1. `git add .`
-2. `git commit -m "Implement professional email system and custom UIDs"`
-3. `git push origin main`
-
 ## 🌐 Deployment to Netlify
 
 Once your code is on GitHub, follow these steps to go live:
 
 1. **Connect to Netlify**: Log in to Netlify and select **"Add new site" > "Import from Git"**.
-2. **Environment Variables**: In the Netlify Dashboard (**Site Settings > Environment Variables**), add:
-   - `GEMINI_API_KEY`: Your Google AI Key
-   - `SMTP_USER`: `onecracktestportal@gmail.com`
-   - `SMTP_PASS`: `bgng slvy xkow zyii` (Google App Password)
+2. **Environment Variables**: In the Netlify Dashboard, navigate to **Site Settings > Environment Variables** and add the following:
+
+| Key | Value | Purpose |
+| :--- | :--- | :--- |
+| `GEMINI_API_KEY` | *Your key from [Google AI Studio](https://aistudio.google.com/)* | Powers AI Question Import & Study Plans |
+| `SMTP_USER` | `onecracktestportal@gmail.com` | Sender address for test reports |
+| `SMTP_PASS` | `bgng slvy xkow zyii` | Gmail App Password for secure sending |
+
+3. **Deploy**: Click "Deploy Site". Netlify will automatically build the project using the settings in `netlify.toml`.
 
 ## 👤 Special Accounts
 - **Admin Access**: 
