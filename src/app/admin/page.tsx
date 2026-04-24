@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -11,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { adminAutoImportQuestions } from '@/ai/flows/admin-auto-import-questions';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Plus, Database, Wand2, Loader2, Trash2, CheckCircle2 } from 'lucide-react';
+import { FileUp, Plus, Database, Wand2, Loader2, Trash2, CheckCircle2, FileText, CheckSquare } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Question, ClassLevel, Test } from '@/lib/types';
@@ -25,6 +24,14 @@ export default function AdminDashboard() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   
+  const [sourceFiles, setSourceFiles] = useState<{
+    questions: { file: File | null; dataUri: string | null };
+    answerKey: { file: File | null; dataUri: string | null };
+  }>({
+    questions: { file: null, dataUri: null },
+    answerKey: { file: null, dataUri: null }
+  });
+
   const [testData, setTestData] = useState({
     title: '',
     subject: '',
@@ -35,38 +42,46 @@ export default function AdminDashboard() {
     skip: 0
   });
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (type: 'questions' | 'answerKey') => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSourceFiles(prev => ({
+        ...prev,
+        [type]: { file, dataUri: reader.result as string }
+      }));
+      toast({ title: `${type === 'questions' ? 'Question' : 'Answer Key'} Loaded`, description: file.name });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const runAIImport = async () => {
+    if (!sourceFiles.questions.dataUri) {
+      toast({ variant: "destructive", title: "Missing Document", description: "Please upload the Question document first." });
+      return;
+    }
+
     setImporting(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUri = reader.result as string;
-        try {
-          const result = await adminAutoImportQuestions({
-            fileDataUri: dataUri,
-            fileName: file.name,
-            adminInstructions: `Import ${testData.subject} questions. Ensure class level is ${testData.classLevel}.`
-          });
-          
-          const newQuestions: Question[] = result.map(q => ({
-            ...q,
-            classLevel: q.classLevel as ClassLevel
-          }));
+      const result = await adminAutoImportQuestions({
+        fileDataUri: sourceFiles.questions.dataUri,
+        answerKeyDataUri: sourceFiles.answerKey.dataUri || undefined,
+        fileName: sourceFiles.questions.file?.name || 'document.pdf',
+        adminInstructions: `Import ${testData.subject} questions. Ensure class level is ${testData.classLevel}.`
+      });
+      
+      const newQuestions: Question[] = result.map(q => ({
+        ...q,
+        classLevel: q.classLevel as ClassLevel
+      }));
 
-          setImportedQuestions(prev => [...prev, ...newQuestions]);
-          toast({ title: "AI Import Success", description: `Parsed ${newQuestions.length} items.` });
-        } catch (err) {
-          toast({ variant: "destructive", title: "AI Parsing Failed", description: "The document could not be processed." });
-        } finally {
-          setImporting(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      setImportedQuestions(newQuestions);
+      toast({ title: "AI Import Success", description: `Parsed ${newQuestions.length} items with answer mapping.` });
     } catch (err) {
-      toast({ variant: "destructive", title: "Upload Error", description: "File could not be read." });
+      toast({ variant: "destructive", title: "AI Parsing Failed", description: "The documents could not be processed." });
+    } finally {
       setImporting(false);
     }
   };
@@ -93,13 +108,15 @@ export default function AdminDashboard() {
       negativeMarks: testData.neg,
       skippedMarks: testData.skip,
       isReleased: true,
-      adminId: user.uid
+      adminId: user.uid,
+      answerKeyUrl: sourceFiles.answerKey.dataUri || undefined
     };
 
     try {
       await setDoc(doc(db, 'tests', testId), newTest);
       toast({ title: "Test Published", description: "The test is now live for students." });
       setImportedQuestions([]);
+      setSourceFiles({ questions: { file: null, dataUri: null }, answerKey: { file: null, dataUri: null } });
     } catch (error) {
       toast({ variant: "destructive", title: "Database Error", description: "Could not sync test data." });
     } finally {
@@ -127,51 +144,74 @@ export default function AdminDashboard() {
                 <Card className="rounded-[2rem] border-border bg-card shadow-xl shadow-muted/5">
                   <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2">
-                      <Wand2 className="w-5 h-5 text-primary" /> Smart Question Importer
+                      <Wand2 className="w-5 h-5 text-primary" /> Multi-Source AI Importer
                     </CardTitle>
-                    <CardDescription>AI-powered document parsing for PDF and DOCX files.</CardDescription>
+                    <CardDescription>Upload question sheets and answer keys for automated mapping.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="relative group">
-                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-[2rem] py-16 px-10 text-center space-y-4 hover:border-primary/50 transition-all bg-muted/20">
-                        {importing && (
-                          <div className="absolute inset-0 bg-background/90 backdrop-blur-md z-10 flex flex-col items-center justify-center space-y-4 rounded-[2rem]">
-                            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                            <p className="font-bold text-primary animate-pulse tracking-widest">AI NEURAL PARSING IN PROGRESS...</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">1. Question Sheet (Required)</Label>
+                        <div className="relative group">
+                          <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-[1.5rem] py-10 px-6 text-center space-y-3 transition-all ${sourceFiles.questions.file ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/20 hover:border-primary/30'}`}>
+                            <FileText className={`w-8 h-8 ${sourceFiles.questions.file ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <div className="space-y-1">
+                              <p className="font-bold text-sm">{sourceFiles.questions.file ? sourceFiles.questions.file.name : 'Upload PDF/Docx'}</p>
+                              <p className="text-[9px] text-muted-foreground">Contains the test items</p>
+                            </div>
+                            <Input type="file" className="hidden" id="q-upload" onChange={handleFileChange('questions')} accept=".pdf,.docx" />
+                            <Button asChild variant="secondary" size="sm" className="rounded-lg font-bold">
+                              <label htmlFor="q-upload" className="cursor-pointer">Browse</label>
+                            </Button>
                           </div>
-                        )}
-                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                          <FileUp className="w-10 h-10" />
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-black text-xl">Upload Source Material</p>
-                          <p className="text-xs text-muted-foreground font-medium">Drag & drop PDF or Word documents (Max 15MB)</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">2. Answer Key (Optional)</Label>
+                        <div className="relative group">
+                          <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-[1.5rem] py-10 px-6 text-center space-y-3 transition-all ${sourceFiles.answerKey.file ? 'border-accent/50 bg-accent/5' : 'border-border bg-muted/20 hover:border-accent/30'}`}>
+                            <CheckSquare className={`w-8 h-8 ${sourceFiles.answerKey.file ? 'text-accent' : 'text-muted-foreground'}`} />
+                            <div className="space-y-1">
+                              <p className="font-bold text-sm">{sourceFiles.answerKey.file ? sourceFiles.answerKey.file.name : 'Upload PDF/Docx'}</p>
+                              <p className="text-[9px] text-muted-foreground">Aids AI in accurate grading</p>
+                            </div>
+                            <Input type="file" className="hidden" id="a-upload" onChange={handleFileChange('answerKey')} accept=".pdf,.docx" />
+                            <Button asChild variant="secondary" size="sm" className="rounded-lg font-bold">
+                              <label htmlFor="a-upload" className="cursor-pointer">Browse</label>
+                            </Button>
+                          </div>
                         </div>
-                        <Input type="file" className="hidden" id="file-upload" onChange={handleFileUpload} accept=".pdf,.docx" />
-                        <Button asChild variant="secondary" className="rounded-xl h-12 px-8 font-bold">
-                          <label htmlFor="file-upload" className="cursor-pointer">Select File</label>
-                        </Button>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Staging Area ({importedQuestions.length})</h4>
-                      <div className="max-h-[400px] overflow-y-auto space-y-3 pr-3">
+                    <Button 
+                      onClick={runAIImport} 
+                      disabled={importing || !sourceFiles.questions.dataUri} 
+                      className="w-full h-12 rounded-xl font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
+                    >
+                      {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
+                      {importing ? 'Processing Matrix...' : 'Run Neural Extraction'}
+                    </Button>
+
+                    <div className="space-y-4 pt-4 border-t border-border/50">
+                      <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Extracted Questions ({importedQuestions.length})</h4>
+                      <div className="max-h-[300px] overflow-y-auto space-y-3 pr-3">
                         {importedQuestions.map((q, idx) => (
                           <div key={idx} className="p-4 bg-muted/30 border border-border rounded-2xl flex justify-between items-center group">
                              <div>
                                <p className="text-sm font-bold line-clamp-1">{q.questionText}</p>
                                <div className="flex gap-3 text-[9px] font-black uppercase tracking-tighter mt-1">
                                  <span className="text-primary">{q.questionType}</span>
-                                 <span className="text-muted-foreground">{q.subject}</span>
+                                 <span className="text-accent">{q.correctAnswer || 'No Answer'}</span>
                                </div>
                              </div>
-                             <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-8 w-8 text-destructive" onClick={() => setImportedQuestions(prev => prev.filter((_, i) => i !== idx))}>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setImportedQuestions(prev => prev.filter((_, i) => i !== idx))}>
                                <Trash2 className="w-4 h-4" />
                              </Button>
                           </div>
                         ))}
-                        {importedQuestions.length === 0 && <div className="text-center py-10 border border-dashed rounded-2xl text-muted-foreground italic text-sm">No items staged. Use the AI importer above.</div>}
+                        {importedQuestions.length === 0 && <div className="text-center py-10 border border-dashed rounded-2xl text-muted-foreground italic text-sm">Matrix empty. Upload files and run extraction.</div>}
                       </div>
                     </div>
                   </CardContent>
@@ -181,8 +221,8 @@ export default function AdminDashboard() {
               <div className="space-y-8">
                 <Card className="rounded-[2rem] border-border bg-card shadow-xl shadow-muted/5">
                   <CardHeader>
-                    <CardTitle className="font-headline text-xl">Control Matrix</CardTitle>
-                    <CardDescription>Global test parameters and settings.</CardDescription>
+                    <CardTitle className="font-headline text-xl">Global Matrix</CardTitle>
+                    <CardDescription>Test configuration parameters.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-5">
                     <div className="space-y-1.5">
@@ -211,7 +251,7 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Duration (Minutes)</Label>
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Time (Minutes)</Label>
                       <Input type="number" className="rounded-xl h-11 bg-muted/30" value={testData.time} onChange={e => setTestData({...testData, time: parseInt(e.target.value)})} />
                     </div>
 
@@ -230,9 +270,9 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <Button onClick={createTest} disabled={isPublishing} className="w-full h-14 rounded-2xl font-black mt-4 shadow-2xl shadow-primary/20 bg-primary text-white hover:bg-primary/90">
+                    <Button onClick={createTest} disabled={isPublishing || importedQuestions.length === 0} className="w-full h-14 rounded-2xl font-black mt-4 shadow-2xl shadow-primary/20 bg-primary text-white hover:bg-primary/90">
                       {isPublishing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Plus className="w-5 h-5 mr-2" />}
-                      Publish to Portal
+                      Finalize & Publish
                     </Button>
                   </CardContent>
                 </Card>
@@ -248,14 +288,14 @@ export default function AdminDashboard() {
                   <CardDescription>Centralized bank for all evaluation items.</CardDescription>
                 </div>
                 <Button variant="outline" className="rounded-xl border-primary/20 text-primary font-bold">
-                  <Database className="w-4 h-4 mr-2" /> Synced to Firestore
+                  <Database className="w-4 h-4 mr-2" /> Live Sync
                 </Button>
               </CardHeader>
               <CardContent className="h-[400px] flex items-center justify-center text-muted-foreground font-medium flex-col gap-4">
                  <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
                    <CheckCircle2 className="w-10 h-10 opacity-30" />
                  </div>
-                 <p>Repository syncing with global cluster...</p>
+                 <p>Repository fully synchronized.</p>
               </CardContent>
             </Card>
           </TabsContent>

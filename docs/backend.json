@@ -104,6 +104,11 @@
             "type": "string"
           }
         },
+        "answerKeyUrl": {
+          "type": "string",
+          "description": "Optional URL to a PDF document containing the full answer key for this test.",
+          "format": "uri"
+        },
         "creationDate": {
           "type": "string",
           "description": "Timestamp when the test was created.",

@@ -1,4 +1,3 @@
-
 export type ClassLevel = '10' | '11' | '12' | 'Dropper';
 export type Subject = 'Biology' | 'Mathematics' | 'Both';
 export type QuestionType = 'MCQ' | 'AssertionReason' | 'ImageMCQ' | 'ShortAnswer' | 'LongAnswer';
@@ -40,6 +39,7 @@ export interface Test {
   skippedMarks: number;
   isReleased: boolean;
   adminId: string;
+  answerKeyUrl?: string;
 }
 
 export interface Attempt {
