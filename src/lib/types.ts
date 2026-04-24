@@ -51,14 +51,20 @@ export interface Attempt {
   status: 'attempted' | 'visited' | 'marked-for-review' | 'not-visited';
 }
 
+export interface SubjectStats {
+  subject: string;
+  score: number;
+  maxScore: number;
+  timeTakenSeconds: number;
+  avgTimePerQuestionSeconds: number;
+}
+
 export interface TestResult {
   id: string;
   testId: string;
   userId: string;
   submissionId: string;
   timestamp: string;
-  startTime: string;
-  endTime: string;
   attempts: Attempt[];
   totalScore: number;
   maxScore: number;
@@ -67,5 +73,5 @@ export interface TestResult {
   skippedCount: number;
   timeTakenSeconds: number;
   percentageScore: number;
-  isResultsReleased: boolean;
+  subjectBreakdown: SubjectStats[];
 }
