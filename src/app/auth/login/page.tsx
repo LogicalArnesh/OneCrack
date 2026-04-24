@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -8,29 +9,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AuthLayout from '@/components/auth/AuthLayout';
-import { store } from '@/lib/store';
-import { KeyRound, User as UserIcon } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { KeyRound, Mail, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [uid, setUid] = useState('');
+  const auth = useAuth();
+  const [email, setEmail] = useState('');
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const users = store.getUsers();
-    const user = users.find(u => u.uid === uid && u.passcode === passcode);
-
-    if (user) {
-      store.setCurrentUser(user);
+    try {
+      await signInWithEmailAndPassword(auth, email, passcode);
       router.push('/dashboard');
-    } else {
-      setError('Invalid UID or passcode. Please check your credentials.');
+    } catch (err: any) {
+      console.error(err);
+      setError('Invalid email or passcode. Please check your credentials.');
       setLoading(false);
     }
   };
@@ -49,16 +50,16 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="uid" className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Test Login UID</Label>
+            <Label htmlFor="email" className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Email Address</Label>
             <div className="relative">
-              <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                id="uid"
-                type="text"
-                placeholder="Enter your UID"
+                id="email"
+                type="email"
+                placeholder="Enter your email"
                 className="pl-10 h-11 bg-muted/50 border-border focus:ring-primary rounded-xl"
-                value={uid}
-                onChange={(e) => setUid(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -85,6 +86,7 @@ export default function LoginPage() {
         </div>
 
         <Button type="submit" className="w-full h-12 text-lg font-semibold rounded-xl" disabled={loading}>
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {loading ? 'Authenticating...' : 'Sign In'}
         </Button>
 
