@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -43,20 +42,28 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
 
+    const cleanUid = formData.loginUid.trim().toLowerCase();
+
     if (formData.passcode !== formData.confirmPasscode) {
       setError('Passcodes do not match.');
       setLoading(false);
       return;
     }
 
-    if (formData.loginUid.length < 3) {
+    if (cleanUid.length < 3) {
       setError('UID must be at least 3 characters.');
       setLoading(false);
       return;
     }
 
+    if (cleanUid === 'admin') {
+      setError('This UID is reserved for system use.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const authEmail = formData.email || `${formData.loginUid.toLowerCase()}@onecrack.internal`;
+      const authEmail = formData.email || `${cleanUid}@onecrack.internal`;
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, formData.passcode);
       const user = userCredential.user;
 
@@ -64,9 +71,9 @@ export default function RegisterPage() {
         id: user.uid,
         name: formData.name,
         email: formData.email || null,
-        loginUid: formData.loginUid.toLowerCase(),
+        loginUid: cleanUid,
         classLevel: formData.classLevel,
-        subjectPreference: formData.subjectPreference || null,
+        subjectPreference: formData.subjectPreference || 'General',
         registrationDate: new Date().toISOString(),
       });
 
@@ -74,7 +81,7 @@ export default function RegisterPage() {
         await sendWelcomeEmail(
           formData.email, 
           formData.name, 
-          formData.loginUid, 
+          cleanUid, 
           formData.classLevel, 
           formData.subjectPreference || 'General'
         );
@@ -84,7 +91,11 @@ export default function RegisterPage() {
       setTimeout(() => router.push('/dashboard'), 2000);
     } catch (err: any) {
       console.error(err);
-      setError(err.code === 'auth/email-already-in-use' ? 'This UID or email is already taken.' : 'Registration failed.');
+      if (err.code === 'auth/email-already-in-use') {
+        setError('This UID or Email is already registered.');
+      } else {
+        setError(err.message || 'Registration failed. Please try again.');
+      }
       setLoading(false);
     }
   };
@@ -97,7 +108,7 @@ export default function RegisterPage() {
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <p className="text-lg font-headline font-bold">Identity Verified</p>
-          <p className="text-sm text-muted-foreground">Loading your personalized dashboard...</p>
+          <p className="text-sm text-muted-foreground">Preparing your dashboard...</p>
         </div>
       </AuthLayout>
     );
@@ -129,13 +140,14 @@ export default function RegisterPage() {
             <div className="relative">
               <UserCircle className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Ex: student_alpha_01"
+                placeholder="Ex: arnesh_2024"
                 className="pl-10 rounded-xl h-10 bg-muted/30 font-mono"
                 value={formData.loginUid}
                 onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
                 required
               />
             </div>
+            <p className="text-[9px] text-muted-foreground mt-1 px-1">Choose a unique ID you'll remember easily.</p>
           </div>
 
           <div className="space-y-1">
@@ -156,7 +168,7 @@ export default function RegisterPage() {
             <div className="flex items-start gap-1.5 p-2 rounded-lg bg-primary/5 border border-primary/10 mt-1">
               <Info className="w-3 h-3 text-primary shrink-0 mt-0.5" />
               <p className="text-[9px] text-muted-foreground leading-tight">
-                Recommended for password recovery and receiving automated digital reports directly in your inbox.
+                Recommended for receiving performance reports and automated test alerts directly in your inbox.
               </p>
             </div>
           </div>
@@ -227,9 +239,9 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-11 text-lg font-bold rounded-xl mt-2" disabled={loading}>
+        <Button type="submit" className="w-full h-11 text-lg font-bold rounded-xl mt-2 shadow-xl shadow-primary/10" disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? 'Authenticating...' : 'Complete Registration'}
+          {loading ? 'Authenticating...' : 'Register Identity'}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">

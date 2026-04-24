@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -10,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs, limit, doc, setDoc, getDoc } from 'firebase/firestore';
 import { KeyRound, User as UserIcon, Loader2, Eye, EyeOff } from 'lucide-react';
 import { APP_CONFIG } from '@/lib/config';
 
@@ -30,31 +29,61 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    // Special Admin Shortcut
+    const cleanIdentifier = identifier.trim().toLowerCase();
+
+    // Special Admin Shortcut Logic
     if (
-      (identifier.toLowerCase() === APP_CONFIG.ADMIN.UID || identifier.toLowerCase() === APP_CONFIG.ADMIN.EMAIL) && 
+      (cleanIdentifier === APP_CONFIG.ADMIN.UID || cleanIdentifier === APP_CONFIG.ADMIN.EMAIL) && 
       passcode === APP_CONFIG.ADMIN.PASSCODE
     ) {
       try {
+        // Try normal login first
         await signInWithEmailAndPassword(auth, APP_CONFIG.ADMIN.EMAIL, APP_CONFIG.ADMIN.PASSCODE);
         router.push('/admin');
         return;
-      } catch (err) {
+      } catch (err: any) {
+        // If user doesn't exist, this is likely the first run
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          try {
+            // Auto-provision admin for the first time
+            const userCredential = await createUserWithEmailAndPassword(auth, APP_CONFIG.ADMIN.EMAIL, APP_CONFIG.ADMIN.PASSCODE);
+            const user = userCredential.user;
+            
+            // Create user profile
+            await setDoc(doc(db, 'users', user.uid), {
+              id: user.uid,
+              name: 'System Administrator',
+              email: APP_CONFIG.ADMIN.EMAIL,
+              loginUid: 'admin',
+              classLevel: 'Dropper',
+              registrationDate: new Date().toISOString(),
+              isAdmin: true
+            });
+
+            // Grant Admin role
+            await setDoc(doc(db, 'roles_admin', user.uid), { enabled: true });
+            
+            router.push('/admin');
+            return;
+          } catch (createErr) {
+            console.error("Admin Provisioning Failed:", createErr);
+          }
+        }
         console.error("Admin Login Failed:", err);
       }
     }
 
     try {
-      let emailToUse = identifier;
+      let emailToUse = cleanIdentifier;
 
-      // Check if UID
-      if (!identifier.includes('@')) {
+      // Check if UID (no @ symbol)
+      if (!cleanIdentifier.includes('@')) {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('loginUid', '==', identifier.toLowerCase()), limit(1));
+        const q = query(usersRef, where('loginUid', '==', cleanIdentifier), limit(1));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-          throw new Error('No account found with this UID.');
+          throw new Error('Identity not found. Check your Login UID.');
         }
 
         const userData = querySnapshot.docs[0].data();
@@ -65,7 +94,7 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: any) {
       console.error(err);
-      setError('Invalid ID or passcode. Access denied.');
+      setError(err.message || 'Invalid credentials. Please verify your ID and passcode.');
       setLoading(false);
     }
   };
