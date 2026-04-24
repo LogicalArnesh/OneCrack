@@ -4,7 +4,7 @@ A professional academic testing platform built with Next.js, Firebase, and Genki
 
 ## 🚀 How to push to GitHub
 
-Follow these steps in your terminal to push this code to your repository:
+Run these commands one by one in your terminal (do **not** prefix them with `bash`):
 
 1. **Initialize Git**:
    ```bash
