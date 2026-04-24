@@ -1,7 +1,3 @@
 [build]
   command = "npm run build"
   publish = ".next"
-
-[functions]
-  # Maximum allowed timeout for standard Netlify functions
-  timeout = 26
