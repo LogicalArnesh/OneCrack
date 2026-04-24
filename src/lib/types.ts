@@ -24,8 +24,6 @@ export interface Question {
   classLevel: ClassLevel;
   imageIncluded?: boolean;
   explanation?: string;
-  marksCorrect?: number;
-  marksWrong?: number;
 }
 
 export interface Test {
@@ -37,9 +35,11 @@ export interface Test {
   questions: Question[];
   totalTimeMinutes: number;
   createdAt: string;
-  marksPerQuestion?: number;
-  negativeMarks?: number;
-  isReleased?: boolean;
+  marksPerQuestion: number;
+  negativeMarks: number;
+  skippedMarks: number;
+  isReleased: boolean;
+  adminId: string;
 }
 
 export interface Attempt {
@@ -72,6 +72,15 @@ export interface TestResult {
   wrongCount: number;
   skippedCount: number;
   timeTakenSeconds: number;
-  percentageScore: number;
   subjectBreakdown: SubjectStats[];
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'alert' | 'success';
+  timestamp: string;
+  senderId: string;
+  targetClass?: ClassLevel;
 }

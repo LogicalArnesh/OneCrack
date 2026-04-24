@@ -15,7 +15,7 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { ClassLevel, Subject } from '@/lib/types';
-import { CheckCircle2, Loader2, Eye, EyeOff, Info, Mail } from 'lucide-react';
+import { CheckCircle2, Loader2, Eye, EyeOff, Info, Mail, UserCircle } from 'lucide-react';
 import { sendWelcomeEmail } from '@/app/actions/email-actions';
 
 export default function RegisterPage() {
@@ -50,18 +50,16 @@ export default function RegisterPage() {
     }
 
     if (formData.loginUid.length < 3) {
-      setError('Login UID must be at least 3 characters.');
+      setError('UID must be at least 3 characters.');
       setLoading(false);
       return;
     }
 
     try {
-      // If email is not provided, use a virtual one for Firebase Auth
-      const authEmail = formData.email || `${formData.loginUid}@onecrack.internal`;
+      const authEmail = formData.email || `${formData.loginUid.toLowerCase()}@onecrack.internal`;
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, formData.passcode);
       const user = userCredential.user;
 
-      // Create Firestore profile
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         name: formData.name,
@@ -72,44 +70,41 @@ export default function RegisterPage() {
         registrationDate: new Date().toISOString(),
       });
 
-      // Send welcome email if provided
       if (formData.email) {
-        await sendWelcomeEmail(formData.email, formData.name, formData.loginUid);
+        await sendWelcomeEmail(
+          formData.email, 
+          formData.name, 
+          formData.loginUid, 
+          formData.classLevel, 
+          formData.subjectPreference || 'General'
+        );
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('This email or UID is already registered.');
-      } else {
-        setError(err.message || 'Registration failed. Please try again.');
-      }
+      setError(err.code === 'auth/email-already-in-use' ? 'This UID or email is already taken.' : 'Registration failed.');
       setLoading(false);
     }
   };
 
   if (success) {
     return (
-      <AuthLayout title="Account Created">
+      <AuthLayout title="Registration Successful">
         <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
           <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <p className="text-lg font-body text-muted-foreground">
-            Welcome to OneCrack Test Portal!
-          </p>
-          <p className="text-sm text-muted-foreground italic">Redirecting to your dashboard...</p>
+          <p className="text-lg font-headline font-bold">Identity Verified</p>
+          <p className="text-sm text-muted-foreground">Loading your personalized dashboard...</p>
         </div>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title="Create Account" subtitle="Join the professional testing environment">
+    <AuthLayout title="Register Identity" subtitle="Create your professional testing credentials">
       <form onSubmit={handleRegister} className="space-y-4">
         {error && (
           <Alert variant="destructive" className="rounded-xl">
@@ -121,7 +116,7 @@ export default function RegisterPage() {
           <div className="space-y-1">
             <Label className="text-[10px] uppercase font-bold text-muted-foreground">Full Name</Label>
             <Input
-              placeholder="Your full name"
+              placeholder="Ex: John Doe"
               className="rounded-xl h-10 bg-muted/30"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -130,26 +125,29 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Custom Login UID</Label>
-            <Input
-              placeholder="Choose a unique ID (e.g. arnesh99)"
-              className="rounded-xl h-10 bg-muted/30 font-mono"
-              value={formData.loginUid}
-              onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
-              required
-            />
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Custom Unique ID (UID)</Label>
+            <div className="relative">
+              <UserCircle className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Ex: student_alpha_01"
+                className="pl-10 rounded-xl h-10 bg-muted/30 font-mono"
+                value={formData.loginUid}
+                onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Email Address (Optional)</Label>
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Email (Optional)</Label>
               <Badge variant="outline" className="text-[8px] h-4 py-0 border-primary/20 text-primary">RECOMMENDED</Badge>
             </div>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="email"
-                placeholder="student@example.com"
+                placeholder="you@example.com"
                 className="pl-10 rounded-xl h-10 bg-muted/30"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -158,7 +156,7 @@ export default function RegisterPage() {
             <div className="flex items-start gap-1.5 p-2 rounded-lg bg-primary/5 border border-primary/10 mt-1">
               <Info className="w-3 h-3 text-primary shrink-0 mt-0.5" />
               <p className="text-[9px] text-muted-foreground leading-tight">
-                Recommended for password recovery and receiving automated digital test reports.
+                Recommended for password recovery and receiving automated digital reports directly in your inbox.
               </p>
             </div>
           </div>
@@ -199,7 +197,7 @@ export default function RegisterPage() {
               <div className="relative">
                 <Input
                   type={showPass ? "text" : "password"}
-                  placeholder="6+ chars"
+                  placeholder="Min 6 chars"
                   className="rounded-xl h-10 bg-muted/30 pr-10"
                   value={formData.passcode}
                   onChange={(e) => setFormData({...formData, passcode: e.target.value})}
@@ -229,15 +227,15 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-11 text-lg font-semibold rounded-xl mt-2" disabled={loading}>
+        <Button type="submit" className="w-full h-11 text-lg font-bold rounded-xl mt-2" disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? 'Processing...' : 'Register'}
+          {loading ? 'Authenticating...' : 'Complete Registration'}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          Already have an account?{' '}
+          Member already?{' '}
           <Link href="/auth/login" className="text-primary font-bold hover:underline">
-            Login
+            Login Now
           </Link>
         </p>
       </form>

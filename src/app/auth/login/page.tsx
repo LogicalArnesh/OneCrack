@@ -19,7 +19,7 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const db = useFirestore();
-  const [identifier, setIdentifier] = useState(''); // UID or Email
+  const [identifier, setIdentifier] = useState('');
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,20 +31,23 @@ export default function LoginPage() {
     setError('');
 
     // Special Admin Shortcut
-    if (identifier.toLowerCase() === APP_CONFIG.ADMIN.UID && passcode === APP_CONFIG.ADMIN.PASSCODE) {
+    if (
+      (identifier.toLowerCase() === APP_CONFIG.ADMIN.UID || identifier.toLowerCase() === APP_CONFIG.ADMIN.EMAIL) && 
+      passcode === APP_CONFIG.ADMIN.PASSCODE
+    ) {
       try {
         await signInWithEmailAndPassword(auth, APP_CONFIG.ADMIN.EMAIL, APP_CONFIG.ADMIN.PASSCODE);
         router.push('/admin');
         return;
       } catch (err) {
-        // If auth record doesn't exist, proceed with normal logic or handle error
+        console.error("Admin Login Failed:", err);
       }
     }
 
     try {
       let emailToUse = identifier;
 
-      // If identifier doesn't look like an email, it's likely a custom UID
+      // Check if UID
       if (!identifier.includes('@')) {
         const usersRef = collection(db, 'users');
         const q = query(usersRef, where('loginUid', '==', identifier.toLowerCase()), limit(1));
@@ -55,7 +58,6 @@ export default function LoginPage() {
         }
 
         const userData = querySnapshot.docs[0].data();
-        // Use either the real email or the internal virtual email
         emailToUse = userData.email || `${userData.loginUid}@onecrack.internal`;
       }
 
@@ -69,10 +71,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout 
-      title="Secure Access" 
-      subtitle="Login with your UID or Email"
-    >
+    <AuthLayout title="OneCrack Access" subtitle="Secure portal for evaluations">
       <form onSubmit={handleLogin} className="space-y-6">
         {error && (
           <Alert variant="destructive" className="rounded-xl">
@@ -82,7 +81,7 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Login UID or Email</Label>
+            <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Login ID (UID or Email)</Label>
             <div className="relative">
               <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -98,7 +97,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Passcode</Label>
-              <Link href="/auth/forgot" className="text-[10px] text-primary font-bold hover:underline">RECOVER</Link>
+              <Link href="#" className="text-[10px] text-primary font-bold hover:underline opacity-50">FORGOT?</Link>
             </div>
             <div className="relative">
               <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -125,13 +124,13 @@ export default function LoginPage() {
 
         <Button type="submit" className="w-full h-12 text-lg font-bold rounded-xl shadow-xl shadow-primary/10" disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? 'Verifying...' : 'Sign In'}
+          {loading ? 'Verifying Identity...' : 'Sign In'}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          New student?{' '}
+          Not registered?{' '}
           <Link href="/auth/register" className="text-primary font-bold hover:underline">
-            Register UID
+            Register Unique ID
           </Link>
         </p>
       </form>
