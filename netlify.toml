@@ -2,12 +2,6 @@
   command = "npm run build"
   publish = ".next"
 
-[build.environment]
-  NEXT_USE_NETLIFY_EDGE = "true"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
 [functions]
-  # Increase timeout for AI generation flows
+  # Maximum allowed timeout for standard Netlify functions
   timeout = 26
