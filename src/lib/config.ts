@@ -12,7 +12,7 @@ export const APP_CONFIG = {
   },
   ADMIN: {
     UID: 'admin',
-    PASSCODE: '0008',
+    PASSCODE: '000008',
     EMAIL: 'onecracktestportal@gmail.com'
   }
 };

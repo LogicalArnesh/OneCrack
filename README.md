@@ -50,7 +50,7 @@ Once your code is on GitHub, follow these steps to go live:
 ## 👤 Special Accounts
 - **Admin Access**: 
   - UID: `admin`
-  - Passcode: `0008`
+  - Passcode: `000008`
 
 ## Features
 - **Custom Login UID**: Students choose their own unique identifier for faster login.
