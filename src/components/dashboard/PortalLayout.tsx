@@ -34,11 +34,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const auth = useAuth();
   const db = useFirestore();
   const [currentTime, setCurrentTime] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   const profileRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid) : null, [db, user]);
   const { data: profile } = useDoc<PortalUser>(profileRef);
 
   useEffect(() => {
+    setMounted(true);
     if (!isUserLoading && !user) {
       router.push('/auth/login');
     }
@@ -85,15 +87,17 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
-          <div className="hidden sm:flex items-center gap-2 px-4 py-1.5 bg-muted/50 rounded-xl border border-border">
-            <Clock className="w-4 h-4 text-primary" />
-            <span className="text-sm font-mono font-bold">{currentTime} <span className="text-[10px] text-muted-foreground ml-1">IST</span></span>
-          </div>
+          {mounted && (
+            <div className="hidden sm:flex items-center gap-2 px-4 py-1.5 bg-muted/50 rounded-xl border border-border">
+              <Clock className="w-4 h-4 text-primary" />
+              <span className="text-sm font-mono font-bold">{currentTime || '--:--:-- --'} <span className="text-[10px] text-muted-foreground ml-1">IST</span></span>
+            </div>
+          )}
           
           <div className="flex items-center gap-3">
-             <Link href="/dashboard" className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-primary transition-colors">
+             <button className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-primary transition-colors">
                <Bell className="w-5 h-5" />
-             </Link>
+             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-10 pl-2 pr-4 rounded-xl hover:bg-muted/50 gap-3 group">

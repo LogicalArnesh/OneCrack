@@ -3,13 +3,13 @@
 
 import React, { useState } from 'react';
 import PortalLayout from '@/components/dashboard/PortalLayout';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUser, useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
-import { Test, TestResult, User as PortalUser, Notification } from '@/lib/types';
-import { ClipboardList, Award, TrendingUp, Sparkles, Loader2, BookOpen, Bell, AlertTriangle } from 'lucide-react';
+import { Test, TestResult, User as PortalUser } from '@/lib/types';
+import { ClipboardList, Award, TrendingUp, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { generateStudyPlan, StudyPlanOutput } from '@/ai/flows/generate-study-plan';
 import { useToast } from '@/hooks/use-toast';
@@ -33,9 +33,6 @@ export default function Dashboard() {
     return query(collection(db, 'users', user.uid, 'testAttempts'), orderBy('timestamp', 'desc'), limit(5));
   }, [db, user]);
   const { data: recentResults } = useCollection<TestResult>(resultsQuery);
-
-  const notificationsQuery = useMemoFirebase(() => query(collection(db, 'notifications'), orderBy('timestamp', 'desc'), limit(3)), [db]);
-  const { data: notifications } = useCollection<Notification>(notificationsQuery);
 
   const handleGenerateStudyPlan = async () => {
     if (!recentResults?.length) {
@@ -81,26 +78,6 @@ export default function Dashboard() {
           </Badge>
         </div>
 
-        {/* Notifications & Announcements */}
-        {notifications && notifications.length > 0 && (
-          <div className="grid grid-cols-1 gap-4">
-            {notifications.map(note => (
-              <div key={note.id} className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-start gap-4 animate-in slide-in-from-top duration-500">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                  <Bell className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-primary">{note.title}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{note.message}</p>
-                  <p className="text-[9px] text-muted-foreground/60 uppercase font-bold mt-1">
-                    {new Date(note.timestamp).toLocaleDateString()} • System Admin
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="rounded-[2rem] bg-card border-border shadow-none">
             <CardHeader className="pb-2">
@@ -110,7 +87,7 @@ export default function Dashboard() {
               <CardTitle className="text-xl font-headline">Assigned</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-headline font-black text-primary">02</p>
+              <p className="text-4xl font-headline font-black text-primary">{(featuredTests?.length || 0).toString().padStart(2, '0')}</p>
             </CardContent>
           </Card>
 
@@ -165,6 +142,11 @@ export default function Dashboard() {
                    </Button>
                  </div>
                ))}
+               {(!featuredTests || featuredTests.length === 0) && (
+                 <div className="text-center py-10 border border-dashed rounded-[2rem] text-muted-foreground">
+                   No tests currently available.
+                 </div>
+               )}
              </div>
            </div>
 

@@ -11,12 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { adminAutoImportQuestions } from '@/ai/flows/admin-auto-import-questions';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Plus, Database, Wand2, Loader2, Trash2, Megaphone, CheckCircle2 } from 'lucide-react';
+import { FileUp, Plus, Database, Wand2, Loader2, Trash2, CheckCircle2 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
-import { Question, ClassLevel, Test, Notification } from '@/lib/types';
+import { doc, setDoc } from 'firebase/firestore';
+import { Question, ClassLevel, Test } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
-import { Textarea } from '@/components/ui/textarea';
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -36,12 +35,6 @@ export default function AdminDashboard() {
     skip: 0
   });
 
-  const [announcement, setAnnouncement] = useState({
-    title: '',
-    message: '',
-    type: 'info' as 'info' | 'alert' | 'success'
-  });
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -51,24 +44,29 @@ export default function AdminDashboard() {
       const reader = new FileReader();
       reader.onload = async () => {
         const dataUri = reader.result as string;
-        const result = await adminAutoImportQuestions({
-          fileDataUri: dataUri,
-          fileName: file.name,
-          adminInstructions: `Import ${testData.subject} questions. Ensure class level is ${testData.classLevel}.`
-        });
-        
-        const newQuestions: Question[] = result.map(q => ({
-          ...q,
-          classLevel: q.classLevel as ClassLevel
-        }));
+        try {
+          const result = await adminAutoImportQuestions({
+            fileDataUri: dataUri,
+            fileName: file.name,
+            adminInstructions: `Import ${testData.subject} questions. Ensure class level is ${testData.classLevel}.`
+          });
+          
+          const newQuestions: Question[] = result.map(q => ({
+            ...q,
+            classLevel: q.classLevel as ClassLevel
+          }));
 
-        setImportedQuestions(prev => [...prev, ...newQuestions]);
-        toast({ title: "AI Import Success", description: `Parsed ${newQuestions.length} items.` });
-        setImporting(false);
+          setImportedQuestions(prev => [...prev, ...newQuestions]);
+          toast({ title: "AI Import Success", description: `Parsed ${newQuestions.length} items.` });
+        } catch (err) {
+          toast({ variant: "destructive", title: "AI Parsing Failed", description: "The document could not be processed." });
+        } finally {
+          setImporting(false);
+        }
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      toast({ variant: "destructive", title: "Import Failed", description: "AI could not parse file." });
+      toast({ variant: "destructive", title: "Upload Error", description: "File could not be read." });
       setImporting(false);
     }
   };
@@ -100,40 +98,12 @@ export default function AdminDashboard() {
 
     try {
       await setDoc(doc(db, 'tests', testId), newTest);
-      
-      // Auto-Notification
-      await addDoc(collection(db, 'notifications'), {
-        id: uuidv4(),
-        title: "New Test Assigned",
-        message: `${newTest.title} for ${newTest.subject} is now available in your portal.`,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        senderId: user.uid,
-        targetClass: testData.classLevel
-      });
-
-      toast({ title: "Test Published", description: "Students have been notified." });
+      toast({ title: "Test Published", description: "The test is now live for students." });
       setImportedQuestions([]);
     } catch (error) {
-      toast({ variant: "destructive", title: "Database Error", description: "Could not sync." });
+      toast({ variant: "destructive", title: "Database Error", description: "Could not sync test data." });
     } finally {
       setIsPublishing(false);
-    }
-  };
-
-  const postAnnouncement = async () => {
-    if (!user || !announcement.title) return;
-    try {
-      await addDoc(collection(db, 'notifications'), {
-        ...announcement,
-        id: uuidv4(),
-        timestamp: new Date().toISOString(),
-        senderId: user.uid
-      });
-      toast({ title: "Broadcast Sent", description: "Notification pushed to student feeds." });
-      setAnnouncement({ title: '', message: '', type: 'info' });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Could not post." });
     }
   };
 
@@ -148,7 +118,6 @@ export default function AdminDashboard() {
         <Tabs defaultValue="create" className="space-y-8">
           <TabsList className="bg-muted/50 p-1.5 rounded-2xl border border-border">
             <TabsTrigger value="create" className="rounded-xl px-10 font-bold">Build Test</TabsTrigger>
-            <TabsTrigger value="broadcast" className="rounded-xl px-10 font-bold">Broadcast</TabsTrigger>
             <TabsTrigger value="bank" className="rounded-xl px-10 font-bold">Question Bank</TabsTrigger>
           </TabsList>
 
@@ -267,59 +236,6 @@ export default function AdminDashboard() {
                     </Button>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="broadcast">
-            <div className="max-w-2xl mx-auto space-y-8">
-              <Card className="rounded-[2.5rem] border-border bg-card shadow-2xl overflow-hidden">
-                <div className="h-2 bg-accent" />
-                <CardHeader>
-                  <CardTitle className="font-headline flex items-center gap-2">
-                    <Megaphone className="w-6 h-6 text-accent" /> Global Broadcast System
-                  </CardTitle>
-                  <CardDescription>Pushes instant notifications to all active student dashboards.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Announcement Title</Label>
-                    <Input placeholder="Result Declaration Update" className="rounded-xl h-11 bg-muted/30" value={announcement.title} onChange={e => setAnnouncement({...announcement, title: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Content</Label>
-                    <Textarea placeholder="Type your message here..." className="rounded-2xl min-h-[150px] bg-muted/30" value={announcement.message} onChange={e => setAnnouncement({...announcement, message: e.target.value})} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Priority Type</Label>
-                      <Select value={announcement.type} onValueChange={v => setAnnouncement({...announcement, type: v as any})}>
-                        <SelectTrigger className="rounded-xl h-11 bg-muted/30">
-                          <SelectValue placeholder="Info" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="info">General Info</SelectItem>
-                          <SelectItem value="alert">High Alert</SelectItem>
-                          <SelectItem value="success">Declaration / Success</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-end">
-                      <Button onClick={postAnnouncement} className="w-full h-11 rounded-xl font-bold bg-accent text-accent-foreground hover:bg-accent/90">
-                        Pust Broadcast
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="p-6 rounded-3xl bg-card/50 border border-dashed border-border flex items-start gap-4">
-                 <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0">
-                   <Megaphone className="w-5 h-5" />
-                 </div>
-                 <p className="text-xs text-muted-foreground leading-relaxed">
-                   Broadcasts are real-time. Students will see these as persistent banners or notification cards on their dashboard until dismissed.
-                 </p>
               </div>
             </div>
           </TabsContent>
