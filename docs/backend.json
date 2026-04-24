@@ -1,0 +1,533 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the OneCrack Test Portal, including students and administrators. User authentication (passcode) is handled by an external system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the user."
+        },
+        "loginUid": {
+          "type": "string",
+          "description": "A unique user-defined login identifier, distinct from the primary key, used for accessing the portal."
+        },
+        "currentClass": {
+          "type": "string",
+          "description": "The current academic class level of the user (e.g., '10', '11', '12', 'Dropper')."
+        },
+        "subjectPreferences": {
+          "type": "array",
+          "description": "Preferred subjects for users in classes 11, 12, or dropper (e.g., 'Biology', 'Mathematics', 'Both').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "email": {
+          "type": "string",
+          "description": "Optional but recommended email address for notifications and account recovery.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "Timestamp when the user registered on the portal.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "loginUid",
+        "currentClass",
+        "registrationDate"
+      ]
+    },
+    "Test": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Test",
+      "type": "object",
+      "description": "Defines the structure and details of a specific test administered on the portal.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Test entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The name or title of the test."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the test."
+        },
+        "classLevel": {
+          "type": "string",
+          "description": "The academic class level this test is intended for (e.g., '10', '11', '12', 'Dropper')."
+        },
+        "subjectsCovered": {
+          "type": "array",
+          "description": "List of subjects covered within this test (e.g., 'Biology', 'Mathematics', 'Physics').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "totalMarks": {
+          "type": "number",
+          "description": "The maximum possible marks for the entire test."
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The total duration of the test in minutes."
+        },
+        "marksPerCorrectAnswer": {
+          "type": "number",
+          "description": "Marks awarded for each correct answer."
+        },
+        "marksPerWrongAnswer": {
+          "type": "number",
+          "description": "Marks deducted for each incorrect answer (can be 0 or negative)."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to the User (admin) who created this test. (Relationship: User 1:N Test)"
+        },
+        "questionIds": {
+          "type": "array",
+          "description": "References to the Question entities included in this test. (Relationship: Test N:N Question)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Timestamp when the test was created.",
+          "format": "date-time"
+        },
+        "availableFrom": {
+          "type": "string",
+          "description": "The date and time from which the test is available to users.",
+          "format": "date-time"
+        },
+        "availableUntil": {
+          "type": "string",
+          "description": "The date and time until which the test is available to users.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "classLevel",
+        "subjectsCovered",
+        "totalMarks",
+        "durationMinutes",
+        "marksPerCorrectAnswer",
+        "marksPerWrongAnswer",
+        "adminId",
+        "questionIds",
+        "creationDate",
+        "availableFrom",
+        "availableUntil"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Stores the details of individual questions that can be used in tests.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Question entity."
+        },
+        "questionText": {
+          "type": "string",
+          "description": "The main text or content of the question."
+        },
+        "questionType": {
+          "type": "string",
+          "description": "The type of question (e.g., 'MCQ', 'AssertionReason', 'ImageMCQ', 'ShortAnswer', 'LongAnswer')."
+        },
+        "classLevel": {
+          "type": "string",
+          "description": "The academic class level this question is suitable for."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject this question belongs to (e.g., 'Biology', 'Mathematics', 'Physics', 'Chemistry')."
+        },
+        "options": {
+          "type": "array",
+          "description": "An array of possible answer options for MCQ type questions. Null for non-MCQ.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correctAnswer": {
+          "type": "string",
+          "description": "The correct answer to the question. For MCQs, this might be the option text or an identifier; for other types, the expected answer text."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "An optional explanation or solution for the question."
+        },
+        "defaultMarks": {
+          "type": "number",
+          "description": "The default marks assigned to this question, which can be overridden at the Test level."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Optional URL to an image associated with the question, if it's an image-based question.",
+          "format": "uri"
+        },
+        "createdByAdminId": {
+          "type": "string",
+          "description": "Reference to the User (admin) who created or imported this question. (Relationship: User 1:N Question)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the question was created or added to the database.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "questionText",
+        "questionType",
+        "classLevel",
+        "subject",
+        "correctAnswer",
+        "defaultMarks",
+        "createdByAdminId",
+        "createdAt"
+      ]
+    },
+    "TestAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TestAttempt",
+      "type": "object",
+      "description": "Records a specific user's attempt at a test, summarizing their performance.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TestAttempt entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who made this test attempt. (Relationship: User 1:N TestAttempt)"
+        },
+        "testId": {
+          "type": "string",
+          "description": "Reference to the Test that was attempted. (Relationship: Test 1:N TestAttempt)"
+        },
+        "submissionId": {
+          "type": "string",
+          "description": "A unique, randomly generated identifier for this specific test submission."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The date and time when the user started the test.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The date and time when the user submitted or finished the test.",
+          "format": "date-time"
+        },
+        "timeTakenMinutes": {
+          "type": "number",
+          "description": "The total time taken by the user to complete the test, in minutes."
+        },
+        "totalScore": {
+          "type": "number",
+          "description": "The final total score obtained by the user in this attempt."
+        },
+        "percentageScore": {
+          "type": "number",
+          "description": "The total score expressed as a percentage of the maximum possible marks for the test."
+        },
+        "correctQuestionsCount": {
+          "type": "number",
+          "description": "The total number of questions answered correctly in this attempt."
+        },
+        "wrongQuestionsCount": {
+          "type": "number",
+          "description": "The total number of questions answered incorrectly in this attempt."
+        },
+        "unattemptedQuestionsCount": {
+          "type": "number",
+          "description": "The total number of questions left unanswered in this attempt."
+        },
+        "isResultsReleased": {
+          "type": "boolean",
+          "description": "Indicates whether the results for this attempt have been officially released by an admin."
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "The date and time of the test submission, equivalent to endTime, for display purposes.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "testId",
+        "submissionId",
+        "startTime",
+        "endTime",
+        "timeTakenMinutes",
+        "totalScore",
+        "percentageScore",
+        "correctQuestionsCount",
+        "wrongQuestionsCount",
+        "unattemptedQuestionsCount",
+        "isResultsReleased",
+        "submissionDate"
+      ]
+    },
+    "AttemptAnswer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AttemptAnswer",
+      "type": "object",
+      "description": "Stores the user's specific answer and performance for each question within a TestAttempt.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AttemptAnswer entity."
+        },
+        "testAttemptId": {
+          "type": "string",
+          "description": "Reference to the TestAttempt this answer belongs to. (Relationship: TestAttempt 1:N AttemptAnswer)"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question that was answered. (Relationship: Question 1:N AttemptAnswer)"
+        },
+        "userAnswer": {
+          "type": "string",
+          "description": "The answer provided by the user for this question (e.g., selected option, text input). This could be an array of strings for multiple-select MCQs."
+        },
+        "isCorrect": {
+          "type": "boolean",
+          "description": "Indicates whether the user's provided answer was correct."
+        },
+        "marksObtained": {
+          "type": "number",
+          "description": "The actual marks obtained by the user for this specific question."
+        },
+        "timeSpentSeconds": {
+          "type": "number",
+          "description": "The time spent by the user on this particular question in seconds."
+        },
+        "markedForReview": {
+          "type": "boolean",
+          "description": "Indicates if the user marked this question for review during the test."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the question during the attempt (e.g., 'Attempted', 'Skipped', 'MarkedForReview', 'NeverVisited')."
+        }
+      },
+      "required": [
+        "id",
+        "testAttemptId",
+        "questionId",
+        "userAnswer",
+        "isCorrect",
+        "marksObtained",
+        "timeSpentSeconds",
+        "markedForReview",
+        "status"
+      ]
+    },
+    "SupportRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SupportRequest",
+      "type": "object",
+      "description": "Records user-submitted help or support requests to be reviewed by administrators.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SupportRequest entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who submitted the support request. (Relationship: User 1:N SupportRequest)"
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject line or category of the support request (e.g., 'Technical Issue', 'Question About Test', 'General Inquiry')."
+        },
+        "message": {
+          "type": "string",
+          "description": "The detailed message or description of the support issue."
+        },
+        "requestDate": {
+          "type": "string",
+          "description": "Timestamp when the support request was submitted.",
+          "format": "date-time"
+        },
+        "isResolved": {
+          "type": "boolean",
+          "description": "Indicates whether the support request has been resolved by an administrator."
+        },
+        "resolvedByAdminId": {
+          "type": "string",
+          "description": "Optional reference to the User (admin) who resolved this request. (Relationship: User 1:N SupportRequest - optional)"
+        },
+        "resolutionNotes": {
+          "type": "string",
+          "description": "Optional notes from the administrator detailing the resolution of the request."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subject",
+        "message",
+        "requestDate",
+        "isResolved"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual user profiles. The {userId} wildcard must match `request.auth.uid` for access. This path ensures private access for each user to their own profile."
+        }
+      },
+      {
+        "path": "/roles_admin/{adminId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "A collection to define administrative roles. The existence of a document at `/roles_admin/$(request.auth.uid)` grants admin privileges to the user. This is a DBAC approach, making global role checks simple and authorization-independent.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier of the user who holds an administrative role. Must match `request.auth.uid` for rule checks."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tests/{testId}",
+        "definition": {
+          "entityName": "Test",
+          "schema": {
+            "$ref": "#/backend/entities/Test"
+          },
+          "description": "Contains definitions of all available tests. User read access is controlled by 'availableFrom' and 'availableUntil' fields, ensuring QAPs. Admin write access is controlled by the 'adminId' field or general admin role. Includes 'adminId' for authorization independence.",
+          "params": [
+            {
+              "name": "testId",
+              "description": "The unique identifier for a specific test."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Stores individual questions for use in tests. Access is restricted to administrators only. Write access is controlled by the 'createdByAdminId' field or general admin role. Includes 'createdByAdminId' for authorization independence.",
+          "params": [
+            {
+              "name": "questionId",
+              "description": "The unique identifier for a specific question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/testAttempts/{testAttemptId}",
+        "definition": {
+          "entityName": "TestAttempt",
+          "schema": {
+            "$ref": "#/backend/entities/TestAttempt"
+          },
+          "description": "Records a user's attempt at a test. This is a subcollection of a user's profile, ensuring path-based ownership. Access is limited to the owning user (`userId`) and administrators. Includes 'userId' in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user making the test attempt. Must match `request.auth.uid`."
+            },
+            {
+              "name": "testAttemptId",
+              "description": "The unique identifier for a specific test attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/testAttempts/{testAttemptId}/attemptAnswers/{attemptAnswerId}",
+        "definition": {
+          "entityName": "AttemptAnswer",
+          "schema": {
+            "$ref": "#/backend/entities/AttemptAnswer"
+          },
+          "description": "Stores individual answers for each question within a specific test attempt. This nested subcollection inherits ownership from the parent TestAttempt, ensuring strong path-based authorization. Includes 'userId' and 'testAttemptId' in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this test attempt and answers."
+            },
+            {
+              "name": "testAttemptId",
+              "description": "The unique identifier of the test attempt these answers belong to."
+            },
+            {
+              "name": "attemptAnswerId",
+              "description": "The unique identifier for a specific answer within an attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/supportRequests/{supportRequestId}",
+        "definition": {
+          "entityName": "SupportRequest",
+          "schema": {
+            "$ref": "#/backend/entities/SupportRequest"
+          },
+          "description": "Records user-submitted support requests. This is a subcollection of a user's profile, ensuring path-based ownership. Access is limited to the owning user (`userId`) and administrators. Includes 'userId' in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who submitted the support request. Must match `request.auth.uid`."
+            },
+            {
+              "name": "supportRequestId",
+              "description": "The unique identifier for a specific support request."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for the OneCrack Test Portal is designed with a strong emphasis on Authorization Independence, Structural Segregation, and clear Access Modeling to ensure security, scalability, and debuggability. \n\n**Authorization Independence:**\n1.  **User-Owned Data (e.g., '/users/{userId}', '/users/{userId}/testAttempts/{testAttemptId}', '/users/{userId}/supportRequests/{supportRequestId}'):** All data directly owned by or specific to a user is nested under '/users/{userId}'. This design ensures that authorization rules for these paths can rely solely on comparing the path's `{userId}` wildcard with `request.auth.uid`. For instance, a rule like `allow read, write: if request.auth.uid == userId;` is entirely self-contained within the document's path and the request context, eliminating the need for `get()` calls to check parent documents for ownership or permissions. This supports atomic operations and simplifies rule debugging.\n2.  **Global Entities & Admin Roles (e.g., '/tests/{testId}', '/questions/{questionId}', '/roles_admin/{adminId}'):** For entities like 'Test' and 'Question' where an admin is the creator, the `adminId` or `createdByAdminId` is directly embedded within the document. This allows rules to check `resource.data.adminId == request.auth.uid` without external lookups. Administrator privileges are managed through a dedicated `/roles_admin/{adminId}` collection. Access is granted by checking the *existence* of a document at `/roles_admin/$(request.auth.uid)`, which is an atomic and authorization-independent operation, avoiding complex custom claims or hierarchical `get()` dependencies.\n3.  **Test Availability:** User read access to '/tests/{testId}' is governed by `availableFrom` and `availableUntil` fields directly within each 'Test' document. Rules can check `request.time >= resource.data.availableFrom && request.time <= resource.data.availableUntil` atomically, ensuring users only access tests within their active window without requiring `get()` calls or complex state inference.\n\n**QAPs (Query as Authorization Policies) Support:**\n1.  **User-Specific Lists:** For personal data such as a user's test attempts ('/users/{userId}/testAttempts') or support requests ('/users/{userId}/supportRequests'), the hierarchical structure ensures that `list` operations inherently apply authorization. A rule `allow list: if request.auth.uid == userId;` means that a query to `/users/$(request.auth.uid)/testAttempts` will only return the authenticated user's attempts, fulfilling the QAP principle by restricting the query's scope at the path level.\n2.  **Global Lists with Conditions (e.g., listing available tests):** Users can perform `list` operations on the `/tests` collection. The security rules are designed to enforce the `request.time` condition directly on these list operations, ensuring that only tests currently 'available' are returned. This prevents the client from receiving unauthorized data and ensures the rule effectively acts as an authorization policy for the query itself, rather than trying to filter an already broad result set.\n3.  **Admin Access:** Administrators, identified by their presence in `/roles_admin/{adminId}`, have broad `list` access across various collections (e.g., `/tests`, `/questions`, `/users`, and all user-specific subcollections). This is consistent with their role and ensures they can perform their administrative duties efficiently, with the authorization check being a simple `exists()` call rather than complex filtering logic.\n\n**Structural Segregation & Access Modeling:**\n*   Data is segregated by ownership and security posture. For example, all users are in `/users`, all questions in `/questions`, and all tests in `/tests`. User-specific activities like `TestAttempt` and `SupportRequest` are nested under the respective user's path, creating clear ownership boundaries.\n*   Standardized fields like `adminId`, `createdByAdminId`, `userId`, `ownerId` are used consistently for authorization fields. Explicit state modeling (e.g., `isResultsReleased` on `TestAttempt`) provides clarity without inferring state from multiple fields."
+  }
+}

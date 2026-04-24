@@ -1,0 +1,149 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * ONE CRACK TEST PORTAL - SECURITY RULES
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset enforces a strict user-ownership and role-based access model. 
+     * Authorization is primarily path-based for user data and lookup-based (DBAC) for administrative roles.
+     * 
+     * DATA STRUCTURE:
+     * - /users/{userId}: Private user profiles and subcollections (testAttempts, supportRequests).
+     * - /roles_admin/{adminId}: A flat collection where the existence of a document grants global admin rights.
+     * - /tests/{testId}: Global test definitions accessible to students during specific windows.
+     * - /questions/{questionId}: Admin-only repository of test questions.
+     * 
+     * KEY SECURITY DECISIONS:
+     * - Path-Based Ownership: Data nested under /users/{userId} is secured by comparing the UID in the path to the auth token.
+     * - DBAC for Admins: Admin privileges are determined by an 'exists' check on the /roles_admin collection, avoiding custom claims.
+     * - Prototyping Flexibility: Rules enforce WHO can write but do not strictly validate the SHAPE of the data, allowing rapid iteration.
+     * - Relational Integrity: On creation, we enforce that ownership fields (e.g., userId, adminId) match the authenticated user.
+     * 
+     * DENORMALIZATION FOR AUTHORIZATION:
+     * - Document IDs and internal 'userId' or 'adminId' fields are expected to match to ensure fast, non-recursive security checks.
+     */
+
+    // --- Helper Functions ---
+
+    /** @description Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the authenticated user has an entry in the admin roles collection. */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /** @description Checks if the provided UID matches the authenticated user's UID. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Combines ownership check with existence check for updates and deletes. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for the admin roles collection. Existence of a doc grants admin status.
+     * @path /roles_admin/{adminId}
+     * @allow (get) Any signed-in user checking admin status.
+     * @deny (write) Any user; admin roles are typically managed by system-level scripts or super-admins.
+     * @principle DBAC (Document-Based Access Control) for role management.
+     */
+    match /roles_admin/{adminId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false; 
+    }
+
+    /**
+     * @description Rules for User profiles. Users can manage their own, Admins can manage all.
+     * @path /users/{userId}
+     * @allow (create) User creating their own profile where document ID matches auth UID.
+     * @deny (update) User trying to change another user's profile.
+     * @principle Self-creation and path-based ownership.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Rules for Tests. Accessible to students for reading, restricted to Admins for writing.
+     * @path /tests/{testId}
+     * @allow (get) Any signed-in user viewing a test.
+     * @deny (create) A non-admin user trying to create a test.
+     * @principle Public read (for users) with Admin-only writes.
+     */
+    match /tests/{testId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update: if isAdmin() && resource != null && request.resource.data.adminId == resource.data.adminId;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Rules for the Question bank. Restricted entirely to administrative access.
+     * @path /questions/{questionId}
+     * @allow (list) An admin reviewing available questions.
+     * @deny (get) A student attempting to access questions directly.
+     * @principle Administrative segregation of sensitive data.
+     */
+    match /questions/{questionId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.createdByAdminId == request.auth.uid;
+      allow update: if isAdmin() && resource != null && request.resource.data.createdByAdminId == resource.data.createdByAdminId;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description User's test attempts. Scoped to the user's path for simple ownership.
+     * @path /users/{userId}/testAttempts/{testAttemptId}
+     * @allow (create) User submitting their own test results.
+     * @deny (update) User modifying an attempt belonging to someone else.
+     * @principle Path-based ownership for subcollections.
+     */
+    match /users/{userId}/testAttempts/{testAttemptId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin() && resource != null;
+
+      /**
+       * @description Individual answers within a test attempt. Inherits security from testAttempt.
+       * @path /users/{userId}/testAttempts/{testAttemptId}/attemptAnswers/{attemptAnswerId}
+       * @allow (create) User saving an answer during a test.
+       * @deny (list) Anonymous access to user answers.
+       * @principle Nested subcollection ownership.
+       */
+      match /attemptAnswers/{attemptAnswerId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if (isExistingOwner(userId) || isAdmin());
+        allow delete: if isAdmin() && resource != null;
+      }
+    }
+
+    /**
+     * @description User support requests. Scoped to the user's path.
+     * @path /users/{userId}/supportRequests/{supportRequestId}
+     * @allow (create) User submitting a help ticket.
+     * @deny (get) User trying to read support tickets from a different user path.
+     * @principle Structural segregation of private user communications.
+     */
+    match /users/{userId}/supportRequests/{supportRequestId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+  }
+}
