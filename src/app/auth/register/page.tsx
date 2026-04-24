@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -63,28 +64,35 @@ export default function RegisterPage() {
     }
 
     try {
-      const authEmail = formData.email || `${cleanUid}@onecrack.internal`;
+      // ALWAYS use the internal format for the Auth account to guarantee UID login
+      const authEmail = `${cleanUid}@onecrack.internal`;
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, formData.passcode);
       const user = userCredential.user;
 
+      // Save user profile to Firestore
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         name: formData.name,
-        email: formData.email || null,
+        email: formData.email || null, // Real email stored for reports
         loginUid: cleanUid,
         classLevel: formData.classLevel,
         subjectPreference: formData.subjectPreference || 'General',
         registrationDate: new Date().toISOString(),
       });
 
+      // Send professional welcome email if they provided a real address
       if (formData.email) {
-        await sendWelcomeEmail(
-          formData.email, 
-          formData.name, 
-          cleanUid, 
-          formData.classLevel, 
-          formData.subjectPreference || 'General'
-        );
+        try {
+          await sendWelcomeEmail(
+            formData.email, 
+            formData.name, 
+            cleanUid, 
+            formData.classLevel, 
+            formData.subjectPreference || 'General'
+          );
+        } catch (emailErr) {
+          console.warn("Welcome email could not be sent, but registration succeeded.", emailErr);
+        }
       }
 
       setSuccess(true);
@@ -92,7 +100,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
-        setError('This UID or Email is already registered.');
+        setError('This UID is already taken. Please try another one.');
       } else {
         setError(err.message || 'Registration failed. Please try again.');
       }
@@ -147,7 +155,7 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            <p className="text-[9px] text-muted-foreground mt-1 px-1">Choose a unique ID you'll remember easily.</p>
+            <p className="text-[9px] text-muted-foreground mt-1 px-1">Choose a unique ID you'll remember easily (no spaces).</p>
           </div>
 
           <div className="space-y-1">
