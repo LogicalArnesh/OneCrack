@@ -4,7 +4,7 @@ A professional academic testing platform built with Next.js, Firebase, and Genki
 
 ## 🚀 How to push to GitHub
 
-Follow these steps in your terminal to push this code to a new GitHub repository:
+Follow these steps in your terminal to push this code to your repository:
 
 1. **Initialize Git**:
    ```bash
@@ -22,11 +22,8 @@ Follow these steps in your terminal to push this code to a new GitHub repository
    ```
 
 4. **Link to GitHub**:
-   - Create a new, empty repository on [GitHub](https://github.com/new).
-   - Copy the repository URL (e.g., `https://github.com/your-username/your-repo-name.git`).
-   - Run the following (replace the URL with yours):
    ```bash
-   git remote add origin https://github.com/your-username/your-repo-name.git
+   git remote add origin https://github.com/LogicalArnesh/OneCrack.git
    ```
 
 5. **Push to Main**:
@@ -41,7 +38,7 @@ Once your code is on GitHub, follow these steps to go live:
 
 1. **Connect to Netlify**: Log in to Netlify and select **"Add new site" > "Import from Git"**.
 2. **Environment Variables**: In the Netlify Dashboard (**Site Settings > Environment Variables**), add:
-   - `GEMINI_API_KEY`: `AIzaSyDLKpn0CAxN2M3ueY1q2Y9e4nxtn1aL-ms` (The key you provided).
+   - `GEMINI_API_KEY`: `AIzaSyDLKpn0CAxN2M3ueY1q2Y9e4nxtn1aL-ms`
 3. **Build Settings**:
    - Build Command: `npm run build`
    - Publish Directory: `.next`
