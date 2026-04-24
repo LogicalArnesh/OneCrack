@@ -1,3 +1,4 @@
+
 export type ClassLevel = '10' | '11' | '12' | 'Dropper';
 export type Subject = 'Biology' | 'Mathematics' | 'Both';
 export type QuestionType = 'MCQ' | 'AssertionReason' | 'ImageMCQ' | 'ShortAnswer' | 'LongAnswer';
@@ -5,11 +6,11 @@ export type QuestionType = 'MCQ' | 'AssertionReason' | 'ImageMCQ' | 'ShortAnswer
 export interface User {
   id: string;
   name: string;
-  uid: string;
-  passcode: string;
+  loginUid: string;
   classLevel: ClassLevel;
   subjectPreference?: Subject;
   email?: string;
+  registrationDate: string;
   isAdmin?: boolean;
 }
 
@@ -46,7 +47,7 @@ export interface Attempt {
   selectedOption?: string;
   answerText?: string;
   isCorrect?: boolean;
-  timeTakenSeconds: number;
+  timeSpentSeconds: number;
   status: 'attempted' | 'visited' | 'marked-for-review' | 'not-visited';
 }
 
@@ -56,6 +57,8 @@ export interface TestResult {
   userId: string;
   submissionId: string;
   timestamp: string;
+  startTime: string;
+  endTime: string;
   attempts: Attempt[];
   totalScore: number;
   maxScore: number;
@@ -63,11 +66,6 @@ export interface TestResult {
   wrongCount: number;
   skippedCount: number;
   timeTakenSeconds: number;
-  subjectBreakdown: {
-    subject: string;
-    score: number;
-    maxScore: number;
-    timeTakenSeconds: number;
-    avgTimePerQuestionSeconds: number;
-  }[];
+  percentageScore: number;
+  isResultsReleased: boolean;
 }
