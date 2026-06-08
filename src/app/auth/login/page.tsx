@@ -41,8 +41,9 @@ export default function LoginPage() {
         router.push('/admin');
         return;
       } catch (err: any) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
           try {
+            // Attempt to provision admin if missing
             const userCredential = await createUserWithEmailAndPassword(auth, APP_CONFIG.ADMIN.EMAIL, APP_CONFIG.ADMIN.PASSCODE);
             const user = userCredential.user;
             await setDoc(doc(db, 'users', user.uid), {
@@ -59,6 +60,9 @@ export default function LoginPage() {
             return;
           } catch (createErr) {
             console.error("Admin Setup Failed:", createErr);
+            setError('Admin verification failed. Contact system root.');
+            setLoading(false);
+            return;
           }
         }
       }
@@ -66,8 +70,6 @@ export default function LoginPage() {
 
     // 2. Standard User Login
     try {
-      // Determine the login email. 
-      // If the user entered a UID (no @), we use the internal domain.
       const loginEmail = cleanIdentifier.includes('@') 
         ? cleanIdentifier 
         : `${cleanIdentifier}@onecrack.internal`;

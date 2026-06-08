@@ -74,3 +74,11 @@ export interface TestResult {
   timeTakenSeconds: number;
   subjectBreakdown: SubjectStats[];
 }
+
+export interface SystemNotification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  type: 'info' | 'alert' | 'success';
+}

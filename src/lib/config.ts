@@ -3,7 +3,7 @@
  */
 export const APP_CONFIG = {
   NAME: 'OneCrack Test Portal',
-  DOMAIN: 'onecrack.netlify.app', // Update this after your first Netlify deploy
+  DOMAIN: 'onecrack.netlify.app', 
   EMAILS: {
     SENDER_NAME: 'OneCrack Evaluation Engine',
     SENDER_ADDRESS: 'onecracktestportal@gmail.com',

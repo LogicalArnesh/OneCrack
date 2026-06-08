@@ -112,7 +112,7 @@ export default function RegisterPage() {
             <CheckCircle2 className="w-12 h-12" />
           </div>
           <p className="text-2xl font-headline font-bold neon-text">Profile Synced</p>
-          <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Initialising Dashboard...</p>
+          <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest text-[10px]">Initialising Dashboard...</p>
         </div>
       </AuthLayout>
     );
@@ -129,10 +129,10 @@ export default function RegisterPage() {
 
         <div className="space-y-5">
           <div className="space-y-2">
-            <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Full Legal Name</Label>
+            <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Full Name</Label>
             <Input
-              placeholder="Ex: Alexander Pierce"
-              className="rounded-xl h-12 bg-muted/20 border-border focus:border-primary/50 transition-all"
+              placeholder="Ex: Arnesh Sharma"
+              className="rounded-xl h-12 bg-muted/20 border-border"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               required
@@ -144,7 +144,7 @@ export default function RegisterPage() {
             <div className="relative">
               <UserCircle className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Ex: onecrack_pioneer"
+                placeholder="Ex: student_alpha_01"
                 className="pl-12 rounded-xl h-12 bg-muted/20 border-border font-mono font-bold"
                 value={formData.loginUid}
                 onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
@@ -172,14 +172,14 @@ export default function RegisterPage() {
             <div className="flex items-start gap-2.5 p-4 rounded-xl bg-primary/5 border border-primary/20 mt-2">
               <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <p className="text-[9px] text-muted-foreground leading-relaxed font-medium">
-                Email is required to dispatch <span className="text-white">Professional Performance Reports</span> and <span className="text-white">AI Study Roadmaps</span>.
+                Email is used to dispatch <span className="text-white">Professional Performance Reports</span> and <span className="text-white">Analysis</span>.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Academic Class</Label>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Class</Label>
               <Select onValueChange={(v) => setFormData({...formData, classLevel: v as ClassLevel})} required>
                 <SelectTrigger className="rounded-xl h-12 bg-muted/20 border-border">
                   <SelectValue placeholder="Select" />
@@ -193,7 +193,7 @@ export default function RegisterPage() {
               </Select>
             </div>
              <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Subject Stream</Label>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Stream</Label>
               <Select onValueChange={(v) => setFormData({...formData, subjectPreference: v as Subject})}>
                 <SelectTrigger className="rounded-xl h-12 bg-muted/20 border-border">
                   <SelectValue placeholder="Select" />
@@ -201,7 +201,7 @@ export default function RegisterPage() {
                 <SelectContent>
                   <SelectItem value="Biology">Biology</SelectItem>
                   <SelectItem value="Mathematics">Mathematics</SelectItem>
-                  <SelectItem value="Both">Both (PCM/B)</SelectItem>
+                  <SelectItem value="Both">PCM/B</SelectItem>
                   <SelectItem value="General">General</SelectItem>
                 </SelectContent>
               </Select>
@@ -210,11 +210,11 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Secure Passcode</Label>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Passcode</Label>
               <div className="relative">
                 <Input
                   type={showPass ? "text" : "password"}
-                  placeholder="6+ characters"
+                  placeholder="6+ chars"
                   className="rounded-xl h-12 bg-muted/20 border-border pr-12 font-mono"
                   value={formData.passcode}
                   onChange={(e) => setFormData({...formData, passcode: e.target.value})}
@@ -232,7 +232,7 @@ export default function RegisterPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Verify Code</Label>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Verify</Label>
               <Input
                 type={showPass ? "text" : "password"}
                 className="rounded-xl h-12 bg-muted/20 border-border font-mono"
@@ -244,7 +244,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] rounded-2xl mt-4 bg-primary text-black shadow-neon transition-transform active:scale-95" disabled={loading}>
+        <Button type="submit" className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] rounded-2xl mt-4 bg-primary text-black shadow-neon" disabled={loading}>
           {loading ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : <ShieldCheck className="w-5 h-5 mr-3" />}
           ESTABLISH IDENTITY
         </Button>
