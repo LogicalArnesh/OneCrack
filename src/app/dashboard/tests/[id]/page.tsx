@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, addDoc, collection } from 'firebase/firestore';
+import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Test, Attempt, TestResult } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { 
   Timer, 
-  AlertCircle,
   SendHorizontal,
   Loader2,
   ChevronLeft,
@@ -61,8 +60,8 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       if (document.hidden && hasStarted) {
         toast({
           variant: "destructive",
-          title: "SECURITY VIOLATION LOGGED",
-          description: "Unauthorized tab switching detected. This event has been recorded for pedagogical audit.",
+          title: "SECURITY ALERT",
+          description: "Unauthorized tab switching detected. This event has been logged for audit.",
         });
       }
     };
@@ -84,44 +83,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       setAttempts(initialAttempts);
     }
   }, [test]);
-
-  useEffect(() => {
-    if (!hasStarted) return;
-    if (timeLeft <= 0) {
-      finishTest();
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft(prev => Math.max(0, prev - 1));
-      if (test) {
-        const qId = test.questions[currentIdx].id;
-        setAttempts(prev => ({
-          ...prev,
-          [qId]: { ...prev[qId], timeSpentSeconds: (prev[qId]?.timeSpentSeconds || 0) + 1 }
-        }));
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, hasStarted, currentIdx, test]);
-
-  const handleOptionSelect = (option: string) => {
-    if (!test) return;
-    const qId = test.questions[currentIdx].id;
-    setAttempts(prev => ({
-      ...prev,
-      [qId]: { ...prev[qId], selectedOption: option, status: 'attempted' }
-    }));
-  };
-
-  const markForReview = () => {
-    if (!test) return;
-    const qId = test.questions[currentIdx].id;
-    setAttempts(prev => ({
-      ...prev,
-      [qId]: { ...prev[qId], status: 'marked-for-review' }
-    }));
-    toast({ title: "Marked for Review", description: "Pedagogical status updated for item." });
-  };
 
   const finishTest = useCallback(async () => {
     if (!test || !user || isSubmitting) return;
@@ -151,7 +112,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       }
     });
 
-    const result: Omit<TestResult, 'id'> = {
+    const resultData: Omit<TestResult, 'id'> = {
       testId: test.id,
       userId: user.uid,
       submissionId,
@@ -174,16 +135,62 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
 
     try {
       const resultsCol = collection(db, 'users', user.uid, 'testAttempts');
-      const docRef = await addDoc(resultsCol, result);
-      toast({ title: "Audit Synchronized", description: "Submission verified and locked." });
+      const docRef = await addDoc(resultsCol, resultData);
+      toast({ title: "Evaluation Certified", description: "Audit data locked and synchronized." });
       router.push(`/dashboard/results/${docRef.id}`);
     } catch (err) {
-      toast({ variant: "destructive", title: "Audit Failure", description: "Could not finalize evaluation." });
+      console.error(err);
+      toast({ variant: "destructive", title: "Synchronization Failure", description: "Unable to finalize audit." });
       setIsSubmitting(false);
     }
   }, [test, attempts, timeLeft, user, router, db, isSubmitting, toast]);
 
-  if (isTestLoading) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
+  useEffect(() => {
+    if (!hasStarted) return;
+    if (timeLeft <= 0) {
+      finishTest();
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+      
+      if (test && test.questions[currentIdx]) {
+        const qId = test.questions[currentIdx].id;
+        setAttempts(prev => ({
+          ...prev,
+          [qId]: { ...prev[qId], timeSpentSeconds: (prev[qId]?.timeSpentSeconds || 0) + 1 }
+        }));
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, hasStarted, currentIdx, test, finishTest]);
+
+  const handleOptionSelect = (option: string) => {
+    if (!test) return;
+    const qId = test.questions[currentIdx].id;
+    setAttempts(prev => ({
+      ...prev,
+      [qId]: { ...prev[qId], selectedOption: option, status: 'attempted' }
+    }));
+  };
+
+  const markForReview = () => {
+    if (!test) return;
+    const qId = test.questions[currentIdx].id;
+    setAttempts(prev => ({
+      ...prev,
+      [qId]: { ...prev[qId], status: 'marked-for-review' }
+    }));
+    toast({ title: "Marked for Review", description: "Pedagogical tracking updated." });
+  };
+
+  if (isTestLoading) return <div className="h-screen flex items-center justify-center bg-[#000805]"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
 
   if (!test) return null;
 
@@ -202,28 +209,22 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
             <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-8 border border-primary/20 shadow-neon-sm">
               <ShieldAlert className="w-12 h-12" />
             </div>
-            <AlertDialogTitle className="text-center text-4xl font-headline font-black neon-text tracking-tighter uppercase">High-Integrity Protocol</AlertDialogTitle>
+            <AlertDialogTitle className="text-center text-4xl font-headline font-black neon-text tracking-tighter uppercase">Integrity Consent</AlertDialogTitle>
             <AlertDialogDescription className="text-center space-y-8 pt-6">
-              <p className="text-lg font-medium leading-relaxed">By initializing this assessment, you agree to the OneCrack Evaluation Standards. All session activity is monitored for pedagogical integrity.</p>
+              <p className="text-lg font-medium leading-relaxed">By starting this evaluation, you agree to the OneCrack Anti-Cheat Protocol. Any malpractice detection will result in immediate disqualification.</p>
               <div className="grid grid-cols-2 gap-4 text-[10px] font-black uppercase tracking-widest text-left">
                 <div className="p-5 rounded-2xl bg-muted/20 border border-white/5 flex items-center gap-3">
-                  <Shield className="w-4 h-4 text-primary" /> Anti-Cheat Active
+                  <Shield className="w-4 h-4 text-primary" /> No Malpractice
                 </div>
                 <div className="p-5 rounded-2xl bg-muted/20 border border-white/5 flex items-center gap-3">
-                  <Activity className="w-4 h-4 text-primary" /> Session Audited
-                </div>
-                <div className="p-5 rounded-2xl bg-muted/20 border border-white/5 flex items-center gap-3">
-                  <Wifi className="w-4 h-4 text-primary" /> Live Cloud Sync
-                </div>
-                <div className="p-5 rounded-2xl bg-muted/20 border border-white/5 flex items-center gap-3">
-                  <Database className="w-4 h-4 text-primary" /> Data Immutable
+                  <Activity className="w-4 h-4 text-primary" /> Live Auditing
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center mt-12">
-            <AlertDialogAction onClick={() => { setHasStarted(true); setShowConsent(false); }} className="w-full h-16 rounded-2xl font-black bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30 uppercase tracking-[0.2em] text-xs">
-              INITIALIZE EVALUATION
+            <AlertDialogAction onClick={() => { setHasStarted(true); setShowConsent(false); }} className="w-full h-16 rounded-2xl font-black bg-primary text-black hover:bg-primary/90 shadow-2xl uppercase tracking-[0.2em] text-xs">
+              INITIALIZE PORTAL
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -235,17 +236,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
           <div className="space-y-1">
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Live Assessment</p>
             <h2 className="text-2xl font-headline font-black tracking-tight text-white">{test.title}</h2>
-          </div>
-        </div>
-
-        <div className="hidden lg:flex items-center gap-12">
-          <div className="flex items-center gap-3 px-5 py-2.5 bg-muted/20 rounded-full border border-white/5">
-             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Sync: <span className="text-white">CORE-OK</span></span>
-          </div>
-          <div className="flex items-center gap-3 px-5 py-2.5 bg-muted/20 rounded-full border border-white/5">
-             <Activity className="w-4 h-4 text-primary" />
-             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Latency: <span className="text-white">12MS</span></span>
           </div>
         </div>
 
@@ -265,7 +255,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-16 md:p-24 relative">
+        <div className="flex-1 overflow-y-auto p-16 md:p-24 relative custom-scrollbar">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_hsl(var(--primary)/0.04)_0%,_transparent_70%)] pointer-events-none" />
           
           <div className="max-w-4xl mx-auto space-y-16 relative">
@@ -288,7 +278,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-16">
               <div className="space-y-6">
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">Question Data Block</p>
-                <h2 className="text-4xl font-headline font-black leading-[1.2] text-white/95">{currentQ.questionText}</h2>
+                <h2 className="text-4xl font-headline font-black leading-[1.2] text-white/95 whitespace-pre-wrap">{currentQ.questionText}</h2>
               </div>
               
               {currentQ.options && (
@@ -334,7 +324,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
 
         <aside className="w-[450px] border-l border-white/5 bg-card/20 backdrop-blur-3xl hidden xl:flex flex-col p-12 space-y-12">
           <div className="space-y-8">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Analytical Grid</h3>
+            <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Evaluation Matrix</h3>
             <div className="grid grid-cols-5 gap-4">
               {test.questions.map((q, i) => {
                 const att = attempts[q.id];
@@ -342,7 +332,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
                 return (
                   <button key={q.id} onClick={() => setCurrentIdx(i)} className={cn(
                       "aspect-square rounded-2xl flex items-center justify-center text-sm font-black transition-all border-2 relative",
-                      isSelected ? "border-primary scale-115 shadow-neon-sm z-10" : "border-transparent",
+                      isSelected ? "border-primary scale-110 shadow-neon-sm z-10" : "border-transparent",
                       att?.status === 'attempted' ? "bg-primary text-black" : 
                       att?.status === 'marked-for-review' ? "bg-accent text-black" :
                       "bg-muted/10 text-muted-foreground/40 hover:bg-muted/20"
@@ -354,26 +344,12 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
 
-          <div className="space-y-8">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Pedagogical Status</h3>
-            <div className="grid grid-cols-2 gap-6">
-               <div className="p-6 rounded-3xl bg-black/40 border border-white/5 flex flex-col gap-2">
-                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Answered</span>
-                 <span className="text-3xl font-black text-primary">{Object.values(attempts).filter(a => a.status === 'attempted').length}</span>
-               </div>
-               <div className="p-6 rounded-3xl bg-black/40 border border-white/5 flex flex-col gap-2">
-                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Marked</span>
-                 <span className="text-3xl font-black text-accent">{Object.values(attempts).filter(a => a.status === 'marked-for-review').length}</span>
-               </div>
-            </div>
-          </div>
-
           <div className="mt-auto p-10 rounded-[2.5rem] bg-primary/5 border border-primary/20 space-y-6">
             <div className="flex items-center gap-4 text-primary font-black text-[11px] uppercase tracking-[0.3em]">
               <ShieldCheck className="w-6 h-6" /> INTEGRITY SECURE
             </div>
             <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-              Proprietary audit tracking is active. Any deviation from JEE-Standard evaluation protocols will trigger a high-integrity lockout.
+              Proprietary evaluation tracking is active. Any deviation from portal protocols will trigger a session lockout.
             </p>
             <div className="flex items-center gap-6 pt-2 opacity-50">
               <Database className="w-5 h-5 text-primary" />
