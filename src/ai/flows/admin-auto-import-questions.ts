@@ -1,7 +1,7 @@
 'use server';
 /**
- * @fileOverview A high-precision Genkit flow for extracting academic questions.
- * Enhanced with 4-digit forensic option codes for professional evaluations.
+ * @fileOverview High-precision Genkit flow for extracting academic questions.
+ * Enhanced with 4-digit forensic option codes for high-fidelity evaluations.
  */
 
 import {ai} from '@/ai/genkit';
@@ -13,13 +13,13 @@ const QuestionTypeSchema = z.enum(['MCQ', 'AssertionReason', 'ImageMCQ', 'ShortA
 const QuestionSchema = z.object({
   id: z.string().optional(),
   questionNumber: z.number().describe("The sequential number from the document."),
-  questionText: z.string().describe("The full question body."),
+  questionText: z.string().describe("The full question body including any context."),
   questionType: QuestionTypeSchema.default('MCQ'),
-  options: z.array(z.string()).describe("Exactly 4 options."),
+  options: z.array(z.string()).describe("Exactly 4 options as strings."),
   optionCodes: z.array(z.string()).describe("4 unique generated 4-digit codes for options (e.g. 1021, 1022, 1023, 1024)."),
-  correctAnswer: z.string().describe("The exact text of the correct option."),
-  subject: z.string().describe("Identified subject (Physics/Chemistry/Math/Biology)."),
-  explanation: z.string().optional().describe("Detailed solution logic.")
+  correctAnswer: z.string().describe("The exact text of the correct option as it appears in the options list."),
+  subject: z.string().describe("Identified subject (Physics/Chemistry/Mathematics/Biology)."),
+  explanation: z.string().optional().describe("Detailed solution logic or explanation.")
 });
 
 const AdminAutoImportQuestionsInputSchema = z.object({
@@ -41,7 +41,7 @@ const importQuestionsPrompt = ai.definePrompt({
   name: 'importQuestionsPrompt',
   input: {schema: AdminAutoImportQuestionsInputSchema},
   output: {schema: AdminAutoImportQuestionsOutputSchema},
-  prompt: `You are an Elite Academic OCR Engine specialized in JEE/NEET paper parsing.
+  prompt: `You are an Elite Academic OCR Engine specialized in high-fidelity JEE/NEET paper parsing.
 
 TASK:
 Extract EVERY question from the provided document into a structured JSON array.
@@ -53,17 +53,17 @@ INPUTS:
 {{/if}}
 - Context: {{{adminInstructions}}}
 
-STRICT PROTOCOLS:
-1. **Option Codes**: For every question, you MUST generate 4 unique 4-digit numeric codes (optionCodes). These are forensic identifiers for each option.
-2. **Correct Answer**: Strictly match the text from the options list. If an external key is provided, use it. If not, solve the question with 100% precision.
+STRICT EXTRACTION PROTOCOLS:
+1. **Option Codes**: For every question, you MUST generate 4 unique, random 4-digit numeric codes (optionCodes). These act as forensic identifiers for each option.
+2. **Correct Answer**: Strictly match the text from the options list. Ensure 100% precision.
 3. **Structure**: 
    - 'questionNumber': The number as it appears in the PDF.
-   - 'questionText': Preserve formatting and scientific notation.
+   - 'questionText': Preserve formatting, mathematical notation, and context.
    - 'options': Exactly 4 strings.
    - 'subject': Categorize based on content.
-4. **Failure Case**: If a question is incomplete or unreadable, skip it rather than hallucinating.
+4. **Reliability**: If a question is incomplete, unreadable, or missing options, skip it rather than guessing.
 
-Return ONLY a JSON array of question objects.`
+Return ONLY a JSON array of question objects that match the requested schema.`
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -75,7 +75,9 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   async (input) => {
     try {
       const {output} = await importQuestionsPrompt(input);
-      if (!output) throw new Error('AI Engine failed to return a valid response.');
+      if (!output || !Array.isArray(output)) {
+        throw new Error('AI Engine failed to return a valid structured question array.');
+      }
       
       return output.map(q => ({
         ...q,
@@ -83,7 +85,7 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
       }));
     } catch (error: any) {
       console.error("AI Flow Error:", error);
-      throw new Error(`Extraction Logic Failed: ${error.message}`);
+      throw new Error(`Neural Extraction Failed: ${error.message}`);
     }
   }
 );
