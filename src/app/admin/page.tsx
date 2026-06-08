@@ -24,7 +24,8 @@ import {
   FileText,
   Edit3,
   Save,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -329,10 +330,18 @@ export default function AdminDashboard() {
 
           <div className="lg:col-span-8 space-y-8">
             <Tabs defaultValue="bank" className="w-full">
-              <TabsList className="bg-card/40 p-1 rounded-2xl border border-border mb-8">
-                <TabsTrigger value="bank" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Staging Bank ({importedQuestions.length})</TabsTrigger>
-                <TabsTrigger value="manual" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Manual Entry</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between mb-8">
+                <TabsList className="bg-card/40 p-1 rounded-2xl border border-border">
+                  <TabsTrigger value="bank" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Staging Bank</TabsTrigger>
+                  <TabsTrigger value="manual" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Manual Entry</TabsTrigger>
+                </TabsList>
+                {importedQuestions.length > 0 && (
+                  <div className="px-6 py-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">{importedQuestions.length} Items Indexed</span>
+                  </div>
+                )}
+              </div>
 
               <TabsContent value="bank" className="space-y-5">
                 <div className="max-h-[1000px] overflow-y-auto space-y-5 pr-2 custom-scrollbar">
@@ -411,6 +420,7 @@ export default function AdminDashboard() {
                     <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground opacity-40">
                       <Database className="w-20 h-20 mx-auto mb-6" />
                       <p className="font-black uppercase tracking-widest text-sm">Audit Forge Is Idle</p>
+                      <p className="text-[10px] uppercase mt-2">Upload a PDF to initialize neural parsing</p>
                     </div>
                   )}
                 </div>

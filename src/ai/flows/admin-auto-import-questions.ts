@@ -50,9 +50,15 @@ const importQuestionsPrompt = ai.definePrompt({
     ]
   },
   system: `You are a Forensic Academic OCR Engine specialized in high-stakes examination parsing (JEE/NEET/Advanced).
-Your goal is to extract questions and options with 100% fidelity.`,
-  prompt: `TASK:
-Identify and extract every question and its associated options from the provided source document.
+Your goal is to extract questions and options with 100% fidelity.
+
+STRICT JSON OUTPUT PROTOCOL:
+1. Identify every question block.
+2. For every question, you MUST generate 4 unique, random 4-digit numeric codes (e.g. 1021, 1022, 1023, 1024).
+3. The 'correctAnswer' must EXACTLY match one of the strings in the 'options' array.
+4. If options are labeled (A, B, C, D), extract the text following the labels.
+5. Use LaTeX-style notation for any mathematical formulas.`,
+  prompt: `TASK: Identify and extract every question and its associated options from the provided source document.
 
 INPUTS:
 - Source Document: {{media url=fileDataUri}}
@@ -61,14 +67,7 @@ INPUTS:
 {{/if}}
 - Admin Context: {{{adminInstructions}}}
 
-STRICT PROTOCOLS:
-1. **Option Extraction**: Identify all 4 options for every MCQ. Do not truncate text. If a question has more or fewer options, normalize to 4 or skip if it's not a standard question.
-2. **Forensic Option Codes**: For every single question, you MUST generate 4 unique, random 4-digit numeric codes. These must be assigned sequentially to the options.
-3. **Correct Answer Matching**: Ensure the correctAnswer field exactly matches the text of one of the options.
-4. **Subject Mapping**: Categorize questions into Physics, Chemistry, Mathematics, Biology, or General based on content.
-5. **Mathematical Precision**: Capture formulas and notation as accurately as possible in the text strings. Use LaTeX-style notation for complex formulas.
-
-Return ONLY a valid JSON array of question objects.`,
+Return a valid JSON array of question objects following the schema.`,
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -81,8 +80,8 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
     try {
       const {output} = await importQuestionsPrompt(input);
       
-      if (!output || !Array.isArray(output)) {
-        throw new Error('AI Engine failed to return a structured question set. The document might be too complex or contain unsupported formats.');
+      if (!output || !Array.isArray(output) || output.length === 0) {
+        throw new Error('Neural engine returned an empty set. Ensure the PDF contains text-based or clearly legible questions.');
       }
       
       return output.map(q => ({
@@ -91,7 +90,6 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
       }));
     } catch (error: any) {
       console.error("AI Flow Error:", error);
-      // Re-throw a cleaner error message for the UI
       throw new Error(error.message || "Internal Extraction Failure. Check API key and document format.");
     }
   }
