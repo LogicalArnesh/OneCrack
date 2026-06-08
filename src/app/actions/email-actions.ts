@@ -3,12 +3,12 @@
 import nodemailer from 'nodemailer';
 import { APP_CONFIG } from '@/lib/config';
 
-// Professional Transporter using secure Environment Variables
+// Secure transporter using environment variables exclusively
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.SMTP_USER || APP_CONFIG.EMAILS.SENDER_ADDRESS,
-    pass: process.env.SMTP_PASS, // Managed via Netlify/Firebase Env Vars for security
+    pass: process.env.SMTP_PASS, 
   },
 });
 
@@ -18,7 +18,7 @@ export async function sendWelcomeEmail(toEmail: string, userName: string, loginU
   const mailOptions = {
     from: `"${APP_CONFIG.EMAILS.SENDER_NAME}" <${APP_CONFIG.EMAILS.SENDER_ADDRESS}>`,
     to: toEmail,
-    subject: `Identity Established: ${APP_CONFIG.NAME} Core Access`,
+    subject: `Portal Authentication: ${APP_CONFIG.NAME} Access Established`,
     html: `
       <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: auto; border: 1px solid #004d40; padding: 50px; border-radius: 32px; background: #000805; color: #ffffff;">
         <div style="text-align: center; margin-bottom: 40px;">
@@ -47,7 +47,7 @@ export async function sendWelcomeEmail(toEmail: string, userName: string, loginU
         </div>
 
         <hr style="border: 0; border-top: 1px solid #004d40; margin: 50px 0;" />
-        <p style="font-size: 10px; color: #00796b; text-align: center;">Cryptographically signed notification from OneCrack Core System.</p>
+        <p style="font-size: 10px; color: #00796b; text-align: center;">OneCrack Core Verification System.</p>
       </div>
     `,
   };
@@ -67,12 +67,12 @@ export async function sendTestReportEmail(toEmail: string, userName: string, res
   const mailOptions = {
     from: `"${APP_CONFIG.EMAILS.SENDER_NAME}" <${APP_CONFIG.EMAILS.SENDER_ADDRESS}>`,
     to: toEmail,
-    subject: `Performance Analysis: ${resultData.testTitle} - Evaluation Certified`,
+    subject: `Analytical Audit: ${resultData.testTitle} - Evaluation Certified`,
     html: `
       <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: auto; border: 1px solid #004d40; padding: 50px; border-radius: 32px; background: #000805; color: #ffffff;">
         <div style="text-align: center; margin-bottom: 40px;">
-          <p style="color: #64ffda; text-transform: uppercase; font-size: 9px; font-weight: 900; letter-spacing: 4px; margin: 0;">EVALUATION REPORT</p>
-          <h1 style="color: #ffffff; font-size: 24px; margin: 10px 0;">Analytical Summary</h1>
+          <p style="color: #64ffda; text-transform: uppercase; font-size: 9px; font-weight: 900; letter-spacing: 4px; margin: 0;">EVALUATION CERTIFIED</p>
+          <h1 style="color: #ffffff; font-size: 24px; margin: 10px 0;">Performance Audit</h1>
         </div>
 
         <p style="color: #b2dfdb; text-align: center; font-size: 14px;">Assessment: <strong>${resultData.testTitle}</strong></p>

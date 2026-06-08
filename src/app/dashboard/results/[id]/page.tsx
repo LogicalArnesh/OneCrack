@@ -2,7 +2,7 @@
 
 import React, { use, useState } from 'react';
 import PortalLayout from '@/components/dashboard/PortalLayout';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
@@ -14,13 +14,11 @@ import {
   HelpCircle, 
   Clock, 
   Mail, 
-  TrendingUp, 
   ShieldCheck,
   Loader2,
   AlertCircle,
   ChevronLeft,
   Award,
-  ShieldAlert,
   FileCode,
   Printer,
   QrCode,
@@ -153,12 +151,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                 {test.subject} AUDIT
               </Badge>
             </div>
-            <div className="flex items-center gap-8 text-sm text-muted-foreground font-medium">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="w-5 h-5 text-primary" />
-                <span className="font-black text-xs uppercase tracking-widest text-white">AUDIT HASH: {result.submissionId}</span>
-              </div>
-            </div>
           </div>
           
           <div className="flex items-center gap-6">
@@ -193,7 +185,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                 <p className="text-xs text-muted-foreground uppercase tracking-widest font-black">IDENTITY VERIFIED</p>
                 <h3 className="text-6xl font-headline font-black text-white tracking-tighter">{profile?.name || 'CANDIDATE'}</h3>
                 <p className="text-sm text-muted-foreground font-medium max-w-2xl leading-relaxed">
-                  This document serves as the official performance transcript for the high-fidelity assessment <span className="text-white font-bold">{test.title}</span>. All results have been cryptographically verified by the OneCrack Evaluation Engine.
+                  This transcript is an official record of the high-fidelity assessment <span className="text-white font-bold">{test.title}</span>. All data has been cryptographically validated.
                 </p>
               </div>
             </div>
@@ -204,12 +196,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                 <p className="text-8xl font-headline font-black text-white">{scorePercentage}%</p>
                 <div className="pt-6 border-t border-white/5">
                   <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Aggregate: {result.totalScore} / {result.maxScore}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 opacity-40">
-                <QrCode className="w-12 h-12 text-white" />
-                <div className="text-[8px] font-mono font-bold leading-tight">
-                  SCAN FOR<br/>VERIFICATION<br/>{result.submissionId}
                 </div>
               </div>
             </div>
@@ -255,7 +241,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 print:hidden">
           <Card className="lg:col-span-2 rounded-[3.5rem] border-white/5 bg-card overflow-hidden shadow-3xl">
             <CardHeader className="border-b border-white/5 px-12 py-10 bg-white/2">
-              <CardTitle className="font-headline text-3xl font-black">Performance Matrix</CardTitle>
+              <h3 className="font-headline text-3xl font-black">Performance Matrix</h3>
             </CardHeader>
             <CardContent className="h-[450px] py-12">
               <ResponsiveContainer width="100%" height="100%">
@@ -285,7 +271,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
           </Card>
 
           <div className="space-y-8">
-             <Card className="rounded-[3.5rem] border-white/5 bg-card/40 backdrop-blur-3xl p-10 flex flex-col justify-between hover:border-primary/40 transition-all group shadow-2xl h-1/2">
+             <Card className="rounded-[3.5rem] border-white/5 bg-card/40 backdrop-blur-3xl p-10 flex flex-col justify-between hover:border-primary/40 transition-all group shadow-2xl h-full">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-10 border border-primary/20">
                 <Clock className="w-7 h-7" />
               </div>
@@ -294,17 +280,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                 <h3 className="text-5xl font-bold font-headline text-white">
                   {Math.floor(result.timeTakenSeconds / 60)}m <span className="text-xl text-white/50">{result.timeTakenSeconds % 60}s</span>
                 </h3>
-              </div>
-            </Card>
-
-            <Card className="rounded-[3.5rem] border-white/5 bg-card/40 backdrop-blur-3xl p-10 flex flex-col justify-between hover:border-accent/40 transition-all group shadow-2xl h-1/2">
-              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-10 border border-accent/20">
-                <TrendingUp className="w-7 h-7" />
-              </div>
-              <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.4em]">Global Percentile</p>
-                <h3 className="text-5xl font-bold font-headline text-accent">98.4th</h3>
-                <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Portal Rank: #04/2100</p>
               </div>
             </Card>
           </div>
@@ -348,13 +323,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                             </div>
                          </div>
                       </div>
-                      <Badge className={cn(
-                        "rounded-xl px-8 py-3 font-black uppercase tracking-widest text-[10px] shadow-2xl shrink-0",
-                        isSkipped ? "bg-muted text-muted-foreground" :
-                        isCorrect ? "bg-primary text-black" : "bg-destructive text-white"
-                      )}>
-                        {isSkipped ? 'SKIPPED' : isCorrect ? 'VALIDATED' : 'INVALID'}
-                      </Badge>
                    </div>
 
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
@@ -406,11 +374,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
           }
           .print-report .bg-primary { background: #000000 !important; color: #ffffff !important; }
           .print-report .text-primary { color: #000000 !important; }
-          .print-report .bg-card\/40 { background: #ffffff !important; }
-          .print-report .border-primary\/20 { border-color: #000000 !important; }
-          .print-report .shadow-3xl, .print-report .shadow-neon { box-shadow: none !important; }
-          .print-report .opacity-5 { opacity: 0.1 !important; }
-          .print-report .bg-white\/2 { background: #f5f5f5 !important; border: 1px solid #ddd !important; }
         }
       `}</style>
     </PortalLayout>

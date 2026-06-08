@@ -1,7 +1,7 @@
 'use server';
 /**
- * @fileOverview High-precision Genkit flow for extracting academic questions.
- * Enhanced with 4-digit forensic option codes for high-fidelity evaluations.
+ * @fileOverview High-precision Genkit flow for extracting academic questions from PDFs.
+ * Generates unique 4-digit forensic option codes for JEE-Advanced style high-fidelity evaluations.
  */
 
 import {ai} from '@/ai/genkit';
@@ -41,7 +41,7 @@ const importQuestionsPrompt = ai.definePrompt({
   name: 'importQuestionsPrompt',
   input: {schema: AdminAutoImportQuestionsInputSchema},
   output: {schema: AdminAutoImportQuestionsOutputSchema},
-  prompt: `You are an Elite Academic OCR Engine specialized in high-fidelity JEE/NEET paper parsing.
+  prompt: `You are an Elite Academic OCR Engine specialized in parsing high-stakes JEE/NEET/Advanced papers from PDF sources.
 
 TASK:
 Extract EVERY question from the provided document into a structured JSON array.
@@ -54,14 +54,10 @@ INPUTS:
 - Context: {{{adminInstructions}}}
 
 STRICT EXTRACTION PROTOCOLS:
-1. **Option Codes**: For every question, you MUST generate 4 unique, random 4-digit numeric codes (optionCodes). These act as forensic identifiers for each option.
-2. **Correct Answer**: Strictly match the text from the options list. Ensure 100% precision.
-3. **Structure**: 
-   - 'questionNumber': The number as it appears in the PDF.
-   - 'questionText': Preserve formatting, mathematical notation, and context.
-   - 'options': Exactly 4 strings.
-   - 'subject': Categorize based on content.
-4. **Reliability**: If a question is incomplete, unreadable, or missing options, skip it rather than guessing.
+1. **Option Codes**: For every single question, you MUST generate 4 unique, random 4-digit numeric codes (optionCodes). These act as forensic identifiers.
+2. **Correct Answer**: Strictly match the text from the extracted options list.
+3. **Question Detection**: Identify question boundaries precisely. Capture multi-line questions and mathematical notation accurately.
+4. **Reliability**: If an item is unreadable, skip it. Do not hallucinate content.
 
 Return ONLY a JSON array of question objects that match the requested schema.`
 });
@@ -76,7 +72,7 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
     try {
       const {output} = await importQuestionsPrompt(input);
       if (!output || !Array.isArray(output)) {
-        throw new Error('AI Engine failed to return a valid structured question array.');
+        throw new Error('AI Engine failed to return a valid question set.');
       }
       
       return output.map(q => ({
@@ -85,7 +81,7 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
       }));
     } catch (error: any) {
       console.error("AI Flow Error:", error);
-      throw new Error(`Neural Extraction Failed: ${error.message}`);
+      throw new Error(`Neural Extraction Failure: ${error.message}`);
     }
   }
 );
