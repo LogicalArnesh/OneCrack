@@ -1,5 +1,5 @@
 export type ClassLevel = '10' | '11' | '12' | 'Dropper';
-export type Subject = 'Biology' | 'Mathematics' | 'Both';
+export type Subject = 'Biology' | 'Mathematics' | 'Both' | 'Physics' | 'Chemistry' | 'General';
 export type QuestionType = 'MCQ' | 'AssertionReason' | 'ImageMCQ' | 'ShortAnswer' | 'LongAnswer';
 
 export interface User {
@@ -18,7 +18,7 @@ export interface Question {
   questionText: string;
   questionType: QuestionType;
   options?: string[];
-  correctAnswer?: string | string[];
+  correctAnswer?: string;
   subject: string;
   classLevel: ClassLevel;
   imageIncluded?: boolean;
@@ -73,14 +73,4 @@ export interface TestResult {
   skippedCount: number;
   timeTakenSeconds: number;
   subjectBreakdown: SubjectStats[];
-}
-
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'alert' | 'success';
-  timestamp: string;
-  senderId: string;
-  targetClass?: ClassLevel;
 }
