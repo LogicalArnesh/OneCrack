@@ -49,14 +49,15 @@ CONTEXT:
 {{/if}}
 
 EXTRACTION PROTOCOL:
-1. **Precision Extraction**: Identify question text, all 4 options (A, B, C, D), and the correct answer.
+1. **Precision Extraction**: Identify question text, all options (usually A, B, C, D), and the correct answer.
 2. **Subject Mapping**: If the document contains multiple subjects, categorize each question accurately.
 3. **Answer Key Integration**: If a separate Answer Key document is provided, strictly use it to map correct answers. If not, use your internal knowledge to solve the question and provide the correct answer.
-4. **Data Integrity**: For MCQs, ensure the 'options' array contains exactly 4 strings.
+4. **Data Integrity**: For MCQs, ensure the 'options' array contains exactly 4 strings. If the document has more/less, normalize it to 4 if possible or extract as is.
 5. **Class Level**: Default to the class level provided in instructions unless specified otherwise in the text.
+6. **Explanations**: Generate or extract a brief step-by-step explanation for why the answer is correct.
 
 FORMATTING:
-Return a clean array of questions matching the defined schema.`
+Return a clean JSON array of questions matching the defined schema. Ensure question text is complete and options are properly mapped.`
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(

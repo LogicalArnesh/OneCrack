@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, addDoc, collection } from 'firebase/firestore';
 import { Test, Attempt, TestResult } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -190,7 +190,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
     toast({ title: "Marked for Review", description: "Pedagogical tracking updated." });
   };
 
-  if (isTestLoading) return <div className="h-screen flex items-center justify-center bg-[#000805]"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
+  if (isTestLoading) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
 
   if (!test) return null;
 
@@ -202,7 +202,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
   };
 
   return (
-    <div className="min-h-screen bg-[#000805] flex flex-col overflow-hidden text-foreground">
+    <div className="min-h-screen bg-background flex flex-col overflow-hidden text-foreground">
       <AlertDialog open={showConsent} onOpenChange={setShowConsent}>
         <AlertDialogContent className="rounded-[3rem] max-w-2xl p-14 border-primary/20 bg-card shadow-3xl">
           <AlertDialogHeader>
@@ -256,8 +256,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto p-16 md:p-24 relative custom-scrollbar">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_hsl(var(--primary)/0.04)_0%,_transparent_70%)] pointer-events-none" />
-          
           <div className="max-w-4xl mx-auto space-y-16 relative">
             <div className="flex items-center justify-between border-b border-white/5 pb-10">
               <Badge variant="outline" className="rounded-xl px-8 py-3 font-black text-primary border-primary/40 bg-primary/5 text-xs tracking-[0.3em] uppercase">
