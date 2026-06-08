@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 145 100% 4%;
+    --background: 160 100% 3%;
     --foreground: 180 10% 98%;
-    --card: 145 100% 6%;
+    --card: 160 100% 5%;
     --card-foreground: 180 10% 98%;
-    --popover: 145 100% 5%;
+    --popover: 160 100% 4%;
     --popover-foreground: 180 10% 98%;
-    --primary: 180 100% 45%;
-    --primary-foreground: 145 100% 5%;
-    --secondary: 145 100% 12%;
-    --secondary-foreground: 180 100% 80%;
-    --muted: 145 50% 15%;
+    --primary: 185 100% 50%;
+    --primary-foreground: 160 100% 5%;
+    --secondary: 160 80% 12%;
+    --secondary-foreground: 185 100% 80%;
+    --muted: 160 40% 15%;
     --muted-foreground: 180 20% 65%;
-    --accent: 155 100% 50%;
-    --accent-foreground: 145 100% 5%;
+    --accent: 145 100% 50%;
+    --accent-foreground: 160 100% 5%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 145 100% 15%;
-    --input: 145 100% 15%;
-    --ring: 180 100% 45%;
-    --radius: 1rem;
+    --border: 160 100% 12%;
+    --input: 160 100% 12%;
+    --ring: 185 100% 50%;
+    --radius: 1.25rem;
   }
 }
 
@@ -32,21 +32,30 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    background-image: radial-gradient(circle at 50% -20%, hsl(var(--primary) / 0.15), transparent 60%);
+    @apply bg-background text-foreground font-body antialiased;
+    background-image: 
+      radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.08), transparent 40%),
+      radial-gradient(circle at 100% 100%, hsl(var(--accent) / 0.08), transparent 40%);
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline;
+    @apply font-headline tracking-tight;
   }
-}
-
-.neon-glow {
-  box-shadow: 0 0 15px -2px hsl(var(--primary) / 0.5);
 }
 
 .neon-text {
-  text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
+  text-shadow: 0 0 10px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.2);
+}
+
+.shadow-neon {
+  box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.6);
+}
+
+.shadow-neon-sm {
+  box-shadow: 0 0 10px -3px hsl(var(--primary) / 0.4);
+}
+
+.shadow-3xl {
+  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -59,14 +68,11 @@
   @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
 }
 
-.shadow-neon {
-  box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.6);
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
-.shadow-neon-sm {
-  box-shadow: 0 0 10px -3px hsl(var(--primary) / 0.4);
-}
-
-.shadow-3xl {
-  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.5);
+.animate-pulse-soft {
+  animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
