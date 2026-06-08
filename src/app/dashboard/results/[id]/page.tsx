@@ -24,7 +24,9 @@ import {
   Download,
   Activity,
   Award,
-  ArrowUpRight
+  ArrowUpRight,
+  ShieldAlert,
+  FileCode
 } from 'lucide-react';
 import {
   PieChart,
@@ -87,6 +89,45 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const downloadResponseSheet = () => {
+    if (!result || !test) return;
+
+    const csvContent = [
+      ["ONE CRACK TEST PORTAL - FORENSIC RESPONSE AUDIT"],
+      [`Submission ID: ${result.submissionId}`],
+      [`Timestamp: ${new Date(result.timestamp).toLocaleString()}`],
+      [`Student: ${profile?.name} (${profile?.loginUid})`],
+      [`Assessment: ${test.title}`],
+      [""],
+      ["Question #", "Question ID", "Option Code (Selected)", "Status", "Time Spent (s)", "Marks Obtained"],
+      ...test.questions.map((q, idx) => {
+        const attempt = result.attempts.find(a => a.questionId === q.id);
+        const optIdx = q.options?.indexOf(attempt?.selectedOption || "");
+        const optionCode = optIdx !== -1 && q.optionCodes ? q.optionCodes[optIdx!] : "N/A";
+        const isCorrect = attempt?.selectedOption === q.correctAnswer;
+        const status = !attempt?.selectedOption ? "SKIPPED" : isCorrect ? "VALIDATED" : "INVALID";
+        const marks = !attempt?.selectedOption ? (test.skippedMarks || 0) : isCorrect ? test.marksPerQuestion : -(test.negativeMarks || 0);
+
+        return [
+          idx + 1,
+          q.id,
+          optionCode,
+          status,
+          attempt?.timeSpentSeconds || 0,
+          marks
+        ];
+      })
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `OneCrack_Response_Sheet_${result.submissionId}.csv`;
+    a.click();
+    toast({ title: "Audit Downloaded", description: "Forensic response sheet generated." });
+  };
+
   if (isResultLoading || isTestLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-12 h-12 text-primary animate-spin" /></div>;
 
   if (!result || !test) return <PortalLayout><div className="flex flex-col items-center justify-center py-32"><AlertCircle className="w-16 h-16 text-destructive mb-6" /><h2 className="text-2xl font-black">Audit Profile Missing</h2></div></PortalLayout>;
@@ -125,8 +166,8 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
           </div>
           
           <div className="flex items-center gap-6">
-            <Button variant="outline" className="rounded-[2rem] h-16 px-10 font-black gap-4 border-white/5 bg-secondary/20 backdrop-blur-3xl hover:bg-muted/30 transition-all uppercase tracking-widest text-xs">
-              <Download className="w-6 h-6" /> PDF AUDIT
+            <Button onClick={downloadResponseSheet} variant="outline" className="rounded-[2rem] h-16 px-10 font-black gap-4 border-white/5 bg-secondary/20 backdrop-blur-3xl hover:bg-muted/30 transition-all uppercase tracking-widest text-xs">
+              <FileCode className="w-6 h-6" /> RESPONSE AUDIT
             </Button>
             <Button onClick={handleSendEmail} disabled={isDispatching} className="rounded-[2rem] h-16 px-12 font-black gap-4 shadow-3xl shadow-primary/30 bg-primary text-black hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs">
               {isDispatching ? <Loader2 className="w-6 h-6 animate-spin" /> : <Mail className="w-6 h-6" />}
@@ -263,7 +304,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                   <h4 className="font-black text-[11px] uppercase tracking-[0.4em]">Integrity Verified</h4>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                  This performance profile is cryptographically signed and bound to UID: <span className="text-white">${profile?.loginUid}</span>. Source data is immutable.
+                  This performance profile is cryptographically signed and bound to UID: <span className="text-white">{profile?.loginUid}</span>. Source data is immutable.
                 </p>
                 <div className="pt-6 border-t border-primary/10">
                    <div className="w-32 h-1.5 bg-primary/30 rounded-full" />
@@ -292,6 +333,8 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
               const attempt = result.attempts.find(a => a.questionId === q.id);
               const isCorrect = attempt?.selectedOption === q.correctAnswer;
               const isSkipped = !attempt?.selectedOption;
+              const selectedOptIdx = q.options?.indexOf(attempt?.selectedOption || "");
+              const selectedOptionCode = selectedOptIdx !== -1 && q.optionCodes ? q.optionCodes[selectedOptIdx!] : "None";
               
               return (
                 <div key={q.id} className={cn(
@@ -311,6 +354,10 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                                <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em]">
                                  <Clock className="w-5 h-5 text-primary" />
                                  {attempt?.timeSpentSeconds || 0}S RESPONSE TIME
+                               </div>
+                               <div className="flex items-center gap-3 text-[10px] text-primary font-black uppercase tracking-[0.3em]">
+                                 <FileCode className="w-5 h-5" />
+                                 AUDIT CODE: {selectedOptionCode}
                                </div>
                             </div>
                          </div>
@@ -340,7 +387,10 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                           )}>
                             {String.fromCharCode(65 + optIdx)}
                           </div>
-                          <span className="tracking-tight">{opt}</span>
+                          <div className="flex-1 flex flex-col">
+                            <span className="tracking-tight">{opt}</span>
+                            {q.optionCodes && <span className="text-[10px] font-mono opacity-30">ID: {q.optionCodes[optIdx]}</span>}
+                          </div>
                         </div>
                       ))}
                    </div>

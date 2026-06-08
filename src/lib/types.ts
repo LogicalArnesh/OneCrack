@@ -18,6 +18,7 @@ export interface Question {
   questionText: string;
   questionType: QuestionType;
   options?: string[];
+  optionCodes?: string[]; // New: Professional option tracking codes
   correctAnswer?: string;
   subject: string;
   classLevel: ClassLevel;
@@ -45,6 +46,7 @@ export interface Test {
 export interface Attempt {
   questionId: string;
   selectedOption?: string;
+  optionCode?: string; // Track which specific code was selected
   answerText?: string;
   isCorrect?: boolean;
   timeSpentSeconds: number;

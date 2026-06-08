@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A Genkit flow for administrators to automatically import test questions from documents.
+ * @fileOverview A high-precision Genkit flow for extracting academic questions.
  */
 
 import {ai} from '@/ai/genkit';
@@ -11,18 +11,19 @@ const QuestionTypeSchema = z.enum(['MCQ', 'AssertionReason', 'ImageMCQ', 'ShortA
 
 const QuestionSchema = z.object({
   id: z.string().optional(),
-  questionText: z.string().describe("The full text of the question."),
-  questionType: QuestionTypeSchema.describe("The classification of the question type."),
-  options: z.array(z.string()).optional().describe("Exactly 4 options for MCQ type questions."),
-  correctAnswer: z.string().optional().describe("The exact text of the correct option as it appears in the options list."),
-  subject: z.string().describe("The academic subject (e.g., Biology, Physics, Chemistry, Mathematics)."),
-  classLevel: z.enum(['10', '11', '12', 'Dropper']),
-  explanation: z.string().optional().describe("A brief step-by-step solution or explanation.")
+  questionNumber: z.number().describe("The sequential number from the document."),
+  questionText: z.string().describe("The full question body."),
+  questionType: QuestionTypeSchema.default('MCQ'),
+  options: z.array(z.string()).describe("Exactly 4 options."),
+  optionCodes: z.array(z.string()).describe("4 unique generated 4-digit codes for options (e.g. 1021, 1022, 1023, 1024)."),
+  correctAnswer: z.string().describe("The exact text of the correct option."),
+  subject: z.string().describe("Identified subject (Physics/Chemistry/Math/Biology)."),
+  explanation: z.string().optional().describe("Detailed solution logic.")
 });
 
 const AdminAutoImportQuestionsInputSchema = z.object({
-  fileDataUri: z.string().describe("Data URI of the question paper document."),
-  answerKeyDataUri: z.string().optional().describe("Data URI of the separate answer key document if provided."),
+  fileDataUri: z.string().describe("Data URI of the source PDF/DOCX."),
+  answerKeyDataUri: z.string().optional().describe("Data URI of the key if separate."),
   fileName: z.string(),
   adminInstructions: z.string().optional()
 });
@@ -39,26 +40,29 @@ const importQuestionsPrompt = ai.definePrompt({
   name: 'importQuestionsPrompt',
   input: {schema: AdminAutoImportQuestionsInputSchema},
   output: {schema: AdminAutoImportQuestionsOutputSchema},
-  prompt: `You are a high-precision academic OCR and parsing engine. Your objective is to extract every single question from the provided document and format it into a structured test bank.
+  prompt: `You are an Elite Academic OCR Engine specialized in JEE/NEET paper parsing.
 
-CONTEXT:
-- Target Subject/Class: {{{adminInstructions}}}
-- Document: {{media url=fileDataUri}}
+TASK:
+Extract EVERY question from the provided document into a structured JSON array.
+
+INPUTS:
+- Source Document: {{media url=fileDataUri}}
 {{#if answerKeyDataUri}}
-- Answer Key: {{media url=answerKeyDataUri}}
+- External Answer Key: {{media url=answerKeyDataUri}}
 {{/if}}
+- Context: {{{adminInstructions}}}
 
-EXTRACTION PROTOCOL:
-1. **Precision Extraction**: Identify question text, all options (usually labeled A, B, C, D), and the correct answer.
-2. **Subject Mapping**: If the document contains multiple subjects, categorize each question accurately.
-3. **Answer Key Integration**: If a separate Answer Key document is provided, strictly use it to map correct answers. If not, use your internal knowledge to solve the question.
-4. **Correct Answer Format**: The 'correctAnswer' field MUST contain the full text of the correct option, not just the letter (A, B, C, D).
-5. **Data Integrity**: For MCQs, ensure the 'options' array contains exactly 4 strings.
-6. **Class Level**: Default to the class level provided in instructions: {{{adminInstructions}}}.
-7. **Explanations**: Generate a brief step-by-step explanation for why the answer is correct.
+STRICT PROTOCOLS:
+1. **Option Codes**: For every question, you MUST generate 4 unique 4-digit numeric codes (optionCodes). These are forensic identifiers for each option.
+2. **Correct Answer**: Strictly match the text from the options list. If an external key is provided, use it. If not, solve the question with 100% precision.
+3. **Structure**: 
+   - 'questionNumber': The number as it appears in the PDF.
+   - 'questionText': Preserve formatting and scientific notation.
+   - 'options': Exactly 4 strings.
+   - 'subject': Categorize based on content.
+4. **Failure Case**: If a question is incomplete or unreadable, skip it rather than hallucinating.
 
-FORMATTING:
-Return a clean JSON array of questions matching the defined schema. Ensure question text is complete and options are properly mapped.`
+Return ONLY a JSON array of question objects.`
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -68,12 +72,17 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
     outputSchema: AdminAutoImportQuestionsOutputSchema
   },
   async (input) => {
-    const {output} = await importQuestionsPrompt(input);
-    if (!output || output.length === 0) throw new Error('AI could not parse questions from the provided documents.');
-    
-    return output.map(q => ({
-      ...q,
-      id: q.id || uuidv4()
-    }));
+    try {
+      const {output} = await importQuestionsPrompt(input);
+      if (!output) throw new Error('AI Engine failed to return a valid response.');
+      
+      return output.map(q => ({
+        ...q,
+        id: q.id || uuidv4()
+      }));
+    } catch (error: any) {
+      console.error("AI Flow Error:", error);
+      throw new Error(`Extraction Logic Failed: ${error.message}`);
+    }
   }
 );
