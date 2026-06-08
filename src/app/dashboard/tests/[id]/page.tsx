@@ -189,7 +189,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       ...prev,
       [qId]: { ...prev[qId], status: 'marked-for-review' }
     }));
-    toast({ title: "Marked for Review", description: "Pedagogical tracking updated." });
   };
 
   if (isTestLoading) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;

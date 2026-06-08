@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import PortalLayout from '@/components/dashboard/PortalLayout';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,7 @@ import {
   FileX,
   CheckCircle2,
   FileText,
-  AlertCircle
+  Edit3
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -96,7 +96,6 @@ export default function AdminDashboard() {
     }));
     if (type === 'questions' && qInputRef.current) qInputRef.current.value = '';
     if (type === 'answerKey' && aInputRef.current) aInputRef.current.value = '';
-    toast({ title: "Source Modified", description: "File successfully removed from forge." });
   };
 
   const addManualQuestion = () => {
@@ -117,7 +116,7 @@ export default function AdminDashboard() {
     };
     setImportedQuestions(prev => [...prev, newQ]);
     setManualQ({ ...manualQ, questionText: '', correctAnswer: '', explanation: '', options: ['', '', '', ''] });
-    toast({ title: "Entry Verified", description: "Manual item added to staging bank." });
+    toast({ title: "Entry Verified", description: "Question added to staging bank." });
   };
 
   const runAIImport = async () => {
@@ -131,7 +130,7 @@ export default function AdminDashboard() {
         fileDataUri: sourceFiles.questions.dataUri,
         answerKeyDataUri: sourceFiles.answerKey.dataUri || undefined,
         fileName: sourceFiles.questions.file?.name || 'source.pdf',
-        adminInstructions: `Subject Preference: ${testConfig.subject}, Class: ${testConfig.classLevel}. Extract all options and generate 4-digit codes.`
+        adminInstructions: `Subject: ${testConfig.subject}, Class: ${testConfig.classLevel}. Extract all options and generate 4-digit forensic codes.`
       });
       
       const formatted = result.map(q => ({
@@ -140,13 +139,13 @@ export default function AdminDashboard() {
       }));
       
       setImportedQuestions(prev => [...prev, ...formatted]);
-      toast({ title: "Neural Extraction Complete", description: `Successfully analyzed ${result.length} forensic items.` });
+      toast({ title: "Neural Extraction Complete", description: `Successfully analyzed ${result.length} items.` });
     } catch (err: any) {
       console.error(err);
       toast({ 
         variant: "destructive", 
         title: "AI Extraction Error", 
-        description: err.message || "Failed to parse document. Ensure the file is a clear PDF/DOCX." 
+        description: err.message || "Failed to parse document." 
       });
     } finally {
       setImporting(false);
@@ -175,7 +174,7 @@ export default function AdminDashboard() {
 
     try {
       await setDoc(doc(db, 'tests', testId), finalTest);
-      toast({ title: "Portal Synchronized", description: "Evaluation is now live for all eligible students." });
+      toast({ title: "Portal Synchronized", description: "Evaluation is now live for all students." });
       setImportedQuestions([]);
       setTestConfig({ ...testConfig, title: '' });
     } catch (e) {
@@ -277,14 +276,14 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Question Repository</Label>
                     {sourceFiles.questions.file && (
-                      <button onClick={() => removeFile('questions')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1 transition-all hover:scale-105">
+                      <button onClick={() => removeFile('questions')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
                         <FileX className="w-3 h-3" /> REMOVE
                       </button>
                     )}
                   </div>
-                  <div className="relative group/file">
+                  <div className="relative">
                     <Input ref={qInputRef} type="file" onChange={handleFileChange('questions')} accept=".pdf,.docx" className="rounded-xl h-12 bg-muted/20 cursor-pointer border-dashed border-accent/30" />
-                    {sourceFiles.questions.file && <div className="absolute inset-0 bg-background/95 rounded-xl flex items-center px-4 gap-3 border border-accent/40 shadow-inner">
+                    {sourceFiles.questions.file && <div className="absolute inset-0 bg-background rounded-xl flex items-center px-4 gap-3 border border-accent/40">
                       <FileText className="w-5 h-5 text-accent" />
                       <span className="text-xs font-bold truncate flex-1">{sourceFiles.questions.file.name}</span>
                       <CheckCircle2 className="w-4 h-4 text-accent" />
@@ -296,14 +295,14 @@ export default function AdminDashboard() {
                    <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Answer Integrity Key</Label>
                     {sourceFiles.answerKey.file && (
-                      <button onClick={() => removeFile('answerKey')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1 transition-all hover:scale-105">
+                      <button onClick={() => removeFile('answerKey')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
                         <FileX className="w-3 h-3" /> REMOVE
                       </button>
                     )}
                   </div>
-                  <div className="relative group/file">
+                  <div className="relative">
                     <Input ref={aInputRef} type="file" onChange={handleFileChange('answerKey')} accept=".pdf,.docx" className="rounded-xl h-12 bg-muted/20 cursor-pointer border-dashed border-accent/30" />
-                    {sourceFiles.answerKey.file && <div className="absolute inset-0 bg-background/95 rounded-xl flex items-center px-4 gap-3 border border-accent/40 shadow-inner">
+                    {sourceFiles.answerKey.file && <div className="absolute inset-0 bg-background rounded-xl flex items-center px-4 gap-3 border border-accent/40">
                       <FileText className="w-5 h-5 text-accent" />
                       <span className="text-xs font-bold truncate flex-1">{sourceFiles.answerKey.file.name}</span>
                       <CheckCircle2 className="w-4 h-4 text-accent" />
@@ -311,9 +310,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-14 rounded-2xl font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 shadow-neon-sm transition-all uppercase tracking-widest text-[10px]">
+                <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-14 rounded-2xl font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Wand2 className="w-5 h-5 mr-3" />}
-                  {importing ? 'Neural Extraction Active...' : 'Initialize Forensic Extraction'}
+                  {importing ? 'Processing Document...' : 'Initialize Forensic Extraction'}
                 </Button>
               </CardContent>
             </Card>
@@ -321,40 +320,35 @@ export default function AdminDashboard() {
 
           <div className="lg:col-span-8 space-y-8">
             <Tabs defaultValue="bank" className="w-full">
-              <TabsList className="bg-card/40 p-1.5 rounded-2xl border border-border mb-8 shadow-inner">
-                <TabsTrigger value="bank" className="rounded-xl px-12 h-11 font-black uppercase tracking-widest text-[10px]">Staging Bank ({importedQuestions.length})</TabsTrigger>
-                <TabsTrigger value="manual" className="rounded-xl px-12 h-11 font-black uppercase tracking-widest text-[10px]">Manual Entry</TabsTrigger>
+              <TabsList className="bg-card/40 p-1 rounded-2xl border border-border mb-8">
+                <TabsTrigger value="bank" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Staging Bank ({importedQuestions.length})</TabsTrigger>
+                <TabsTrigger value="manual" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Manual Entry</TabsTrigger>
               </TabsList>
 
               <TabsContent value="bank" className="space-y-5">
                 <div className="max-h-[1000px] overflow-y-auto space-y-5 pr-2 custom-scrollbar">
                   {importedQuestions.map((q, idx) => (
-                    <Card key={idx} className="rounded-[2rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden relative">
+                    <Card key={idx} className="rounded-[2rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden">
                       <div className="p-8 flex flex-col md:flex-row gap-8">
-                        <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-white/5 flex items-center justify-center font-black text-xl shrink-0 text-primary shadow-inner">
+                        <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-white/5 flex items-center justify-center font-black text-xl shrink-0 text-primary">
                           {(idx + 1).toString().padStart(2, '0')}
                         </div>
                         <div className="flex-1 space-y-4">
                           <h4 className="font-bold text-xl leading-snug text-white/90">{q.questionText}</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {q.options?.map((opt, i) => (
-                              <div key={i} className={`p-4 rounded-xl border text-sm font-bold flex items-center gap-3 transition-all ${opt === q.correctAnswer ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-muted/10 border-white/5 text-muted-foreground'}`}>
+                              <div key={i} className={`p-4 rounded-xl border text-sm font-bold flex items-center gap-3 ${opt === q.correctAnswer ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-muted/10 border-white/5 text-muted-foreground'}`}>
                                 <span className={cn("w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black", opt === q.correctAnswer ? "bg-primary text-black" : "bg-white/5")}>
                                   {String.fromCharCode(65 + i)}
                                 </span>
                                 <div className="flex-1 truncate">{opt}</div>
-                                {q.optionCodes?.[i] && <span className="text-[9px] opacity-60 font-mono tracking-widest">[{q.optionCodes[i]}]</span>}
+                                {q.optionCodes?.[i] && <span className="text-[9px] opacity-40 font-mono">[{q.optionCodes[i]}]</span>}
                               </div>
                             ))}
                           </div>
-                          {q.explanation && (
-                             <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-[11px] font-medium text-muted-foreground italic">
-                               <span className="text-primary font-black uppercase tracking-widest mr-2 underline decoration-dotted">EXPLANATION:</span> "{q.explanation}"
-                             </div>
-                          )}
                         </div>
                         <div className="flex flex-col gap-2">
-                           <Button variant="ghost" size="icon" className="text-destructive h-12 w-12 rounded-xl hover:bg-destructive/10" onClick={() => setImportedQuestions(prev => prev.filter((_, i) => i !== idx))}>
+                           <Button variant="ghost" size="icon" className="text-destructive h-12 w-12 rounded-xl" onClick={() => setImportedQuestions(prev => prev.filter((_, i) => i !== idx))}>
                             <Trash2 className="w-5 h-5" />
                           </Button>
                         </div>
@@ -362,19 +356,16 @@ export default function AdminDashboard() {
                     </Card>
                   ))}
                   {importedQuestions.length === 0 && (
-                    <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground flex flex-col items-center gap-6 opacity-40">
-                      <Database className="w-20 h-20" />
-                      <div className="space-y-2">
-                        <p className="font-black uppercase tracking-[0.3em] text-sm">Forge Is Idle</p>
-                        <p className="text-xs font-medium">Synchronize questions via Neural Import or Manual Protocol.</p>
-                      </div>
+                    <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground opacity-40">
+                      <Database className="w-20 h-20 mx-auto mb-6" />
+                      <p className="font-black uppercase tracking-widest text-sm">Forge Is Idle</p>
                     </div>
                   )}
                 </div>
               </TabsContent>
 
               <TabsContent value="manual" className="space-y-6">
-                <Card className="rounded-[3rem] border-border bg-card/40 p-12 shadow-3xl">
+                <Card className="rounded-[3rem] border-border bg-card/40 p-12">
                   <div className="space-y-8">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Body</Label>

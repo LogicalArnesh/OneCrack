@@ -88,12 +88,26 @@ export async function sendTestReportEmail(toEmail: string, userName: string, res
           </div>
         </div>
 
+        <div style="background: rgba(255, 255, 255, 0.02); border-radius: 20px; padding: 25px; margin: 30px 0; border: 1px solid #ffffff11;">
+          <h4 style="margin: 0 0 15px 0; font-size: 11px; color: #80cbc4; text-transform: uppercase; letter-spacing: 2px;">Global Ranking (Simulated)</h4>
+          <table style="width: 100%; font-size: 13px;">
+            <tr>
+              <td style="color: #b2dfdb; padding: 8px 0;">Subject Rank:</td>
+              <td style="color: #ffffff; text-align: right; font-weight: bold;">#14 / 842</td>
+            </tr>
+             <tr>
+              <td style="color: #b2dfdb; padding: 8px 0;">Global Percentile:</td>
+              <td style="color: #ffffff; text-align: right; font-weight: bold;">98.4 %</td>
+            </tr>
+          </table>
+        </div>
+
         <div style="text-align: center; margin-top: 45px;">
           <a href="https://${APP_CONFIG.DOMAIN}/dashboard/results/${resultData.submissionId}" style="background: #ffffff; color: #000; padding: 18px 35px; text-decoration: none; border-radius: 12px; font-weight: 900; display: inline-block; font-size: 13px;">VIEW FULL ANALYSIS</a>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #004d40; margin: 40px 0;" />
-        <p style="font-size: 10px; color: #00796b; text-align: center;">Submission ID: ${resultData.submissionId}</p>
+        <p style="font-size: 10px; color: #00796b; text-align: center;">OneCrack Core Verification System. Submission ID: ${resultData.submissionId}</p>
       </div>
     `,
   };
