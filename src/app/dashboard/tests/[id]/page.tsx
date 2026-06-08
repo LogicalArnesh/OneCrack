@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   Activity,
   Wifi,
-  Database
+  Database,
+  Bookmark
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
@@ -155,7 +156,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       userId: user.uid,
       submissionId,
       timestamp: new Date().toISOString(),
-      attempts: finalAttempts,
+      attempts: finalAttempts as any,
       totalScore,
       maxScore: test.questions.length * (test.marksPerQuestion || 4),
       correctCount: correct,

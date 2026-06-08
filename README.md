@@ -1,4 +1,3 @@
-
 # OneCrack Test Portal
 
 A professional academic testing platform built with Next.js, Firebase, and Genkit AI.

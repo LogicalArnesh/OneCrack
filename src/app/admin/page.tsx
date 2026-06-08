@@ -18,12 +18,7 @@ import {
   Wand2, 
   Loader2, 
   Trash2, 
-  CheckCircle2, 
-  FileText, 
-  CheckSquare,
   Settings2,
-  BookOpen,
-  Edit3
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -216,7 +211,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Duration (Mins)</Label>
+                  <Label className="text-[10px) font-black uppercase text-muted-foreground">Duration (Mins)</Label>
                   <Input type="number" className="rounded-xl h-11" value={testConfig.time} onChange={e => setTestConfig({...testConfig, time: parseInt(e.target.value)})} />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
