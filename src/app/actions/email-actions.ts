@@ -3,16 +3,17 @@
 import nodemailer from 'nodemailer';
 import { APP_CONFIG } from '@/lib/config';
 
+// Professional Transporter using secure Environment Variables
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.SMTP_USER || APP_CONFIG.EMAILS.SENDER_ADDRESS,
-    pass: process.env.SMTP_PASS || 'bgng slvy xkow zyii',
+    pass: process.env.SMTP_PASS, // Managed via Netlify/Firebase Env Vars for security
   },
 });
 
 export async function sendWelcomeEmail(toEmail: string, userName: string, loginUid: string, classLevel: string, subject: string) {
-  if (!toEmail) return;
+  if (!toEmail || !process.env.SMTP_PASS) return;
 
   const mailOptions = {
     from: `"${APP_CONFIG.EMAILS.SENDER_NAME}" <${APP_CONFIG.EMAILS.SENDER_ADDRESS}>`,
@@ -61,7 +62,7 @@ export async function sendWelcomeEmail(toEmail: string, userName: string, loginU
 }
 
 export async function sendTestReportEmail(toEmail: string, userName: string, resultData: any) {
-  if (!toEmail) return;
+  if (!toEmail || !process.env.SMTP_PASS) return;
 
   const mailOptions = {
     from: `"${APP_CONFIG.EMAILS.SENDER_NAME}" <${APP_CONFIG.EMAILS.SENDER_ADDRESS}>`,

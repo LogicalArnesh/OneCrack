@@ -18,7 +18,7 @@ export interface Question {
   questionText: string;
   questionType: QuestionType;
   options?: string[];
-  optionCodes?: string[]; // New: Professional option tracking codes
+  optionCodes?: string[]; // Unique 4-digit numeric identifiers for each option (JEE-Adv Style)
   correctAnswer?: string;
   subject: string;
   classLevel: ClassLevel;
@@ -46,8 +46,7 @@ export interface Test {
 export interface Attempt {
   questionId: string;
   selectedOption?: string;
-  optionCode?: string; // Track which specific code was selected
-  answerText?: string;
+  selectedOptionCode?: string; // The specific 4-digit code selected by the student
   isCorrect?: boolean;
   timeSpentSeconds: number;
   status: 'attempted' | 'visited' | 'marked-for-review' | 'not-visited';
@@ -75,12 +74,4 @@ export interface TestResult {
   skippedCount: number;
   timeTakenSeconds: number;
   subjectBreakdown: SubjectStats[];
-}
-
-export interface SystemNotification {
-  id: string;
-  title: string;
-  message: string;
-  timestamp: string;
-  type: 'info' | 'alert' | 'success';
 }

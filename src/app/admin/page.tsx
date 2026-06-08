@@ -200,7 +200,7 @@ export default function AdminDashboard() {
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Identifier</Label>
-                  <Input placeholder="E.g. JEE-Adv Simulator 01" className="rounded-xl h-12 bg-muted/20" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
+                  <input placeholder="E.g. JEE-Adv Simulator 01" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -235,20 +235,20 @@ export default function AdminDashboard() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Duration (Minutes)</Label>
-                  <Input type="number" className="rounded-xl h-12 bg-muted/20" value={testConfig.time} onChange={e => setTestConfig({...testConfig, time: parseInt(e.target.value)})} />
+                  <input type="number" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.time} onChange={e => setTestConfig({...testConfig, time: parseInt(e.target.value)})} />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2 text-center">
                     <Label className="text-[9px] font-black text-primary">VALID</Label>
-                    <Input type="number" className="rounded-xl text-center h-12 font-bold bg-muted/20 border-primary/20" value={testConfig.marks} onChange={e => setTestConfig({...testConfig, marks: parseInt(e.target.value)})} />
+                    <input type="number" className="flex h-12 w-full rounded-xl border border-primary/20 bg-muted/20 text-center font-bold" value={testConfig.marks} onChange={e => setTestConfig({...testConfig, marks: parseInt(e.target.value)})} />
                   </div>
                   <div className="space-y-2 text-center">
                     <Label className="text-[9px] font-black text-destructive">FAIL</Label>
-                    <Input type="number" className="rounded-xl text-center h-12 font-bold bg-muted/20 border-destructive/20" value={testConfig.neg} onChange={e => setTestConfig({...testConfig, neg: parseInt(e.target.value)})} />
+                    <input type="number" className="flex h-12 w-full rounded-xl border border-destructive/20 bg-muted/20 text-center font-bold" value={testConfig.neg} onChange={e => setTestConfig({...testConfig, neg: parseInt(e.target.value)})} />
                   </div>
                   <div className="space-y-2 text-center">
                     <Label className="text-[9px] font-black text-muted-foreground">SKIP</Label>
-                    <Input type="number" className="rounded-xl text-center h-12 font-bold bg-muted/20 border-white/5" value={testConfig.skip} onChange={e => setTestConfig({...testConfig, skip: parseInt(e.target.value)})} />
+                    <input type="number" className="flex h-12 w-full rounded-xl border border-white/5 bg-muted/20 text-center font-bold" value={testConfig.skip} onChange={e => setTestConfig({...testConfig, skip: parseInt(e.target.value)})} />
                   </div>
                 </div>
               </CardContent>
