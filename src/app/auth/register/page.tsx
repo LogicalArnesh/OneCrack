@@ -144,7 +144,7 @@ export default function RegisterPage() {
             <div className="relative">
               <UserCircle className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Ex: portal_user_99"
+                placeholder="Ex: onecrack_pioneer"
                 className="pl-12 rounded-xl h-12 bg-muted/20 border-border font-mono font-bold"
                 value={formData.loginUid}
                 onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
@@ -202,6 +202,7 @@ export default function RegisterPage() {
                   <SelectItem value="Biology">Biology</SelectItem>
                   <SelectItem value="Mathematics">Mathematics</SelectItem>
                   <SelectItem value="Both">Both (PCM/B)</SelectItem>
+                  <SelectItem value="General">General</SelectItem>
                 </SelectContent>
               </Select>
             </div>

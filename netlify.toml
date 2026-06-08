@@ -1,3 +1,10 @@
 [build]
   command = "npm run build"
   publish = ".next"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Setting timeout using the glob pattern object to satisfy the Netlify parser
+[functions."*"]
+  timeout = 60
