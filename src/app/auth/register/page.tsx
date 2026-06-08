@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -15,7 +14,7 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { ClassLevel, Subject } from '@/lib/types';
-import { CheckCircle2, Loader2, Eye, EyeOff, Info, Mail, UserCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Eye, EyeOff, Info, Mail, UserCircle, ShieldCheck } from 'lucide-react';
 import { sendWelcomeEmail } from '@/app/actions/email-actions';
 
 export default function RegisterPage() {
@@ -64,23 +63,20 @@ export default function RegisterPage() {
     }
 
     try {
-      // ALWAYS use the internal format for the Auth account to guarantee UID login
       const authEmail = `${cleanUid}@onecrack.internal`;
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, formData.passcode);
       const user = userCredential.user;
 
-      // Save user profile to Firestore
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         name: formData.name,
-        email: formData.email || null, // Real email stored for reports
+        email: formData.email || null,
         loginUid: cleanUid,
         classLevel: formData.classLevel,
         subjectPreference: formData.subjectPreference || 'General',
         registrationDate: new Date().toISOString(),
       });
 
-      // Send professional welcome email if they provided a real address
       if (formData.email) {
         try {
           await sendWelcomeEmail(
@@ -91,7 +87,7 @@ export default function RegisterPage() {
             formData.subjectPreference || 'General'
           );
         } catch (emailErr) {
-          console.warn("Welcome email could not be sent, but registration succeeded.", emailErr);
+          console.warn("Welcome email could not be sent.", emailErr);
         }
       }
 
@@ -100,9 +96,9 @@ export default function RegisterPage() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
-        setError('This UID is already taken. Please try another one.');
+        setError('This UID is already assigned. Please choose another unique identifier.');
       } else {
-        setError(err.message || 'Registration failed. Please try again.');
+        setError(err.message || 'Identity verification failed.');
       }
       setLoading(false);
     }
@@ -110,82 +106,82 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <AuthLayout title="Registration Successful">
-        <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
-          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary">
-            <CheckCircle2 className="w-10 h-10" />
+      <AuthLayout title="ID VERIFIED" subtitle="Redirecting to central command">
+        <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
+          <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary border-4 border-primary/20 shadow-neon animate-pulse">
+            <CheckCircle2 className="w-12 h-12" />
           </div>
-          <p className="text-lg font-headline font-bold">Identity Verified</p>
-          <p className="text-sm text-muted-foreground">Preparing your dashboard...</p>
+          <p className="text-2xl font-headline font-bold neon-text">Profile Synced</p>
+          <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Initialising Dashboard...</p>
         </div>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title="Register Identity" subtitle="Create your professional testing credentials">
-      <form onSubmit={handleRegister} className="space-y-4">
+    <AuthLayout title="ESTABLISH IDENTITY" subtitle="Create your professional testing credentials">
+      <form onSubmit={handleRegister} className="space-y-6">
         {error && (
-          <Alert variant="destructive" className="rounded-xl">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="rounded-2xl border-destructive/50 bg-destructive/10">
+            <AlertDescription className="font-bold text-xs">{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Full Name</Label>
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Full Legal Name</Label>
             <Input
-              placeholder="Ex: John Doe"
-              className="rounded-xl h-10 bg-muted/30"
+              placeholder="Ex: Alexander Pierce"
+              className="rounded-xl h-12 bg-muted/20 border-border focus:border-primary/50 transition-all"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               required
             />
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Custom Unique ID (UID)</Label>
+          <div className="space-y-2">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Custom Unique ID (UID)</Label>
             <div className="relative">
-              <UserCircle className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <UserCircle className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Ex: arnesh_2024"
-                className="pl-10 rounded-xl h-10 bg-muted/30 font-mono"
+                placeholder="Ex: portal_user_99"
+                className="pl-12 rounded-xl h-12 bg-muted/20 border-border font-mono font-bold"
                 value={formData.loginUid}
                 onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
                 required
               />
             </div>
-            <p className="text-[9px] text-muted-foreground mt-1 px-1">Choose a unique ID you'll remember easily (no spaces).</p>
+            <p className="text-[9px] text-muted-foreground mt-2 px-1 font-bold">Choosing a permanent, memorable ID is crucial for login access.</p>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Email (Optional)</Label>
-              <Badge variant="outline" className="text-[8px] h-4 py-0 border-primary/20 text-primary">RECOMMENDED</Badge>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Personal Email</Label>
+              <Badge variant="outline" className="text-[8px] h-5 py-0 border-primary/30 text-primary uppercase font-black">Highly Recommended</Badge>
             </div>
             <div className="relative">
-              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input
                 type="email"
                 placeholder="you@example.com"
-                className="pl-10 rounded-xl h-10 bg-muted/30"
+                className="pl-12 rounded-xl h-12 bg-muted/20 border-border"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
             </div>
-            <div className="flex items-start gap-1.5 p-2 rounded-lg bg-primary/5 border border-primary/10 mt-1">
-              <Info className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-              <p className="text-[9px] text-muted-foreground leading-tight">
-                Recommended for receiving performance reports and automated test alerts directly in your inbox.
+            <div className="flex items-start gap-2.5 p-4 rounded-xl bg-primary/5 border border-primary/20 mt-2">
+              <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-[9px] text-muted-foreground leading-relaxed font-medium">
+                Email is required to dispatch <span className="text-white">Professional Performance Reports</span> and <span className="text-white">AI Study Roadmaps</span>.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Current Class</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Academic Class</Label>
               <Select onValueChange={(v) => setFormData({...formData, classLevel: v as ClassLevel})} required>
-                <SelectTrigger className="rounded-xl h-10 bg-muted/30">
+                <SelectTrigger className="rounded-xl h-12 bg-muted/20 border-border">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,29 +192,29 @@ export default function RegisterPage() {
                 </SelectContent>
               </Select>
             </div>
-             <div className="space-y-1">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Stream</Label>
+             <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Subject Stream</Label>
               <Select onValueChange={(v) => setFormData({...formData, subjectPreference: v as Subject})}>
-                <SelectTrigger className="rounded-xl h-10 bg-muted/30">
+                <SelectTrigger className="rounded-xl h-12 bg-muted/20 border-border">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Biology">Biology</SelectItem>
                   <SelectItem value="Mathematics">Mathematics</SelectItem>
-                  <SelectItem value="Both">Both</SelectItem>
+                  <SelectItem value="Both">Both (PCM/B)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Passcode</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Secure Passcode</Label>
               <div className="relative">
                 <Input
                   type={showPass ? "text" : "password"}
-                  placeholder="Min 6 chars"
-                  className="rounded-xl h-10 bg-muted/30 pr-10"
+                  placeholder="6+ characters"
+                  className="rounded-xl h-12 bg-muted/20 border-border pr-12 font-mono"
                   value={formData.passcode}
                   onChange={(e) => setFormData({...formData, passcode: e.target.value})}
                   required
@@ -227,18 +223,18 @@ export default function RegisterPage() {
                   type="button" 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute right-1 top-1 h-8 w-8 text-muted-foreground"
+                  className="absolute right-1.5 top-1.5 h-9 w-9 text-muted-foreground hover:bg-transparent"
                   onClick={() => setShowPass(!showPass)}
                 >
-                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Confirm</Label>
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Verify Code</Label>
               <Input
                 type={showPass ? "text" : "password"}
-                className="rounded-xl h-10 bg-muted/30"
+                className="rounded-xl h-12 bg-muted/20 border-border font-mono"
                 value={formData.confirmPasscode}
                 onChange={(e) => setFormData({...formData, confirmPasscode: e.target.value})}
                 required
@@ -247,15 +243,15 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-11 text-lg font-bold rounded-xl mt-2 shadow-xl shadow-primary/10" disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? 'Authenticating...' : 'Register Identity'}
+        <Button type="submit" className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] rounded-2xl mt-4 bg-primary text-black shadow-neon transition-transform active:scale-95" disabled={loading}>
+          {loading ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : <ShieldCheck className="w-5 h-5 mr-3" />}
+          ESTABLISH IDENTITY
         </Button>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Member already?{' '}
-          <Link href="/auth/login" className="text-primary font-bold hover:underline">
-            Login Now
+        <p className="text-center text-xs text-muted-foreground font-bold uppercase tracking-widest">
+          SYNCED ALREADY?{' '}
+          <Link href="/auth/login" className="text-primary hover:underline">
+            ACCESS COMMAND
           </Link>
         </p>
       </form>

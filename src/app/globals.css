@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 10 8% 12%;
-    --foreground: 0 0% 98%;
-    --card: 10 8% 14%;
-    --card-foreground: 0 0% 98%;
-    --popover: 10 8% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 25 85% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 10 8% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 10 8% 18%;
-    --muted-foreground: 10 5% 70%;
-    --accent: 52 98% 61%;
-    --accent-foreground: 10 8% 12%;
+    --background: 145 100% 4%;
+    --foreground: 180 10% 98%;
+    --card: 145 100% 6%;
+    --card-foreground: 180 10% 98%;
+    --popover: 145 100% 5%;
+    --popover-foreground: 180 10% 98%;
+    --primary: 180 100% 45%;
+    --primary-foreground: 145 100% 5%;
+    --secondary: 145 100% 12%;
+    --secondary-foreground: 180 100% 80%;
+    --muted: 145 50% 15%;
+    --muted-foreground: 180 20% 65%;
+    --accent: 155 100% 50%;
+    --accent-foreground: 145 100% 5%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 10 8% 22%;
-    --input: 10 8% 22%;
-    --ring: 25 85% 55%;
-    --radius: 0.75rem;
+    --destructive-foreground: 210 40% 98%;
+    --border: 145 100% 15%;
+    --input: 145 100% 15%;
+    --ring: 180 100% 45%;
+    --radius: 1rem;
   }
 }
 
@@ -34,24 +34,27 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at 50% -20%, hsl(var(--primary) / 0.15), transparent 60%);
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
 }
 
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.neon-glow {
+  box-shadow: 0 0 15px -2px hsl(var(--primary) / 0.5);
 }
-::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+
+.neon-text {
+  text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
 }
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--secondary));
-  border-radius: 4px;
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary));
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
 }
