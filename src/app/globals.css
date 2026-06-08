@@ -4,22 +4,29 @@
 
 @layer base {
   :root {
+    /* Racing Green Backgrounds */
     --background: 160 100% 3%;
     --foreground: 180 10% 98%;
     --card: 160 100% 5%;
     --card-foreground: 180 10% 98%;
     --popover: 160 100% 4%;
     --popover-foreground: 180 10% 98%;
+    
+    /* Neon Bluish-Aqua Accents */
     --primary: 185 100% 50%;
     --primary-foreground: 160 100% 5%;
     --secondary: 160 80% 12%;
     --secondary-foreground: 185 100% 80%;
+    
     --muted: 160 40% 15%;
     --muted-foreground: 180 20% 65%;
+    
     --accent: 145 100% 50%;
     --accent-foreground: 160 100% 5%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+    
     --border: 160 100% 12%;
     --input: 160 100% 12%;
     --ring: 185 100% 50%;

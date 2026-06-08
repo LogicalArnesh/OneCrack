@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -125,15 +124,13 @@ export default function LoginPage() {
                 onChange={(e) => setPasscode(e.target.value)}
                 required
               />
-              <Button 
+              <button 
                 type="button" 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-1 top-1 h-9 w-9 text-muted-foreground hover:bg-transparent"
+                className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setShowPass(!showPass)}
               >
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
