@@ -22,7 +22,9 @@ import {
   FileX,
   CheckCircle2,
   FileText,
-  Edit3
+  Edit3,
+  Save,
+  X
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -41,6 +43,7 @@ export default function AdminDashboard() {
   const [importing, setImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -74,8 +77,8 @@ export default function AdminDashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      toast({ variant: "destructive", title: "File too large", description: "Source documents must be under 8MB." });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "File too large", description: "Source documents must be under 10MB." });
       return;
     }
 
@@ -145,11 +148,17 @@ export default function AdminDashboard() {
       toast({ 
         variant: "destructive", 
         title: "AI Extraction Error", 
-        description: err.message || "Failed to parse document." 
+        description: err.message || "Failed to parse document. Ensure PDF is readable." 
       });
     } finally {
       setImporting(false);
     }
+  };
+
+  const saveEdit = (id: string, updatedQ: Question) => {
+    setImportedQuestions(prev => prev.map(q => q.id === id ? updatedQ : q));
+    setEditingId(null);
+    toast({ title: "Audit Updated", description: "Question modification saved to staging bank." });
   };
 
   const publishTest = async () => {
@@ -312,7 +321,7 @@ export default function AdminDashboard() {
 
                 <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-14 rounded-2xl font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Wand2 className="w-5 h-5 mr-3" />}
-                  {importing ? 'Processing Document...' : 'Initialize Forensic Extraction'}
+                  {importing ? 'Neural Analysis Active...' : 'Initialize Forensic Extraction'}
                 </Button>
               </CardContent>
             </Card>
@@ -328,37 +337,80 @@ export default function AdminDashboard() {
               <TabsContent value="bank" className="space-y-5">
                 <div className="max-h-[1000px] overflow-y-auto space-y-5 pr-2 custom-scrollbar">
                   {importedQuestions.map((q, idx) => (
-                    <Card key={idx} className="rounded-[2rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden">
-                      <div className="p-8 flex flex-col md:flex-row gap-8">
-                        <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-white/5 flex items-center justify-center font-black text-xl shrink-0 text-primary">
-                          {(idx + 1).toString().padStart(2, '0')}
+                    <Card key={q.id} className="rounded-[2rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden">
+                      {editingId === q.id ? (
+                        <div className="p-8 space-y-6">
+                           <div className="space-y-3">
+                              <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Text</Label>
+                              <Textarea 
+                                className="rounded-xl bg-muted/30" 
+                                defaultValue={q.questionText} 
+                                onBlur={(e) => {
+                                  const updated = { ...q, questionText: e.target.value };
+                                  setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
+                                }}
+                              />
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                              {q.options?.map((opt, i) => (
+                                <div key={i} className="space-y-1">
+                                  <Label className="text-[9px] uppercase font-bold opacity-50">Option {String.fromCharCode(65+i)}</Label>
+                                  <Input 
+                                    className="rounded-xl bg-muted/30" 
+                                    defaultValue={opt}
+                                    onBlur={(e) => {
+                                      const newOpts = [...(q.options || [])];
+                                      newOpts[i] = e.target.value;
+                                      setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, options: newOpts } : item));
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                           </div>
+                           <div className="flex items-center gap-4">
+                              <Button size="sm" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-bold uppercase text-[9px]">
+                                <Save className="w-3 h-3 mr-2" /> Save Audit
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="rounded-xl font-bold uppercase text-[9px]">
+                                <X className="w-3 h-3 mr-2" /> Cancel
+                              </Button>
+                           </div>
                         </div>
-                        <div className="flex-1 space-y-4">
-                          <h4 className="font-bold text-xl leading-snug text-white/90">{q.questionText}</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {q.options?.map((opt, i) => (
-                              <div key={i} className={`p-4 rounded-xl border text-sm font-bold flex items-center gap-3 ${opt === q.correctAnswer ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-muted/10 border-white/5 text-muted-foreground'}`}>
-                                <span className={cn("w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black", opt === q.correctAnswer ? "bg-primary text-black" : "bg-white/5")}>
-                                  {String.fromCharCode(65 + i)}
-                                </span>
-                                <div className="flex-1 truncate">{opt}</div>
-                                {q.optionCodes?.[i] && <span className="text-[9px] opacity-40 font-mono">[{q.optionCodes[i]}]</span>}
-                              </div>
-                            ))}
+                      ) : (
+                        <div className="p-8 flex flex-col md:flex-row gap-8">
+                          <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-white/5 flex items-center justify-center font-black text-xl shrink-0 text-primary">
+                            {(idx + 1).toString().padStart(2, '0')}
+                          </div>
+                          <div className="flex-1 space-y-4">
+                            <h4 className="font-bold text-xl leading-snug text-white/90">{q.questionText}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {q.options?.map((opt, i) => (
+                                <div key={i} className={`p-4 rounded-xl border text-sm font-bold flex items-center gap-3 ${opt === q.correctAnswer ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-muted/10 border-white/5 text-muted-foreground'}`}>
+                                  <span className={cn("w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black", opt === q.correctAnswer ? "bg-primary text-black" : "bg-white/5")}>
+                                    {String.fromCharCode(65 + i)}
+                                  </span>
+                                  <div className="flex-1 truncate">{opt}</div>
+                                  {q.optionCodes?.[i] && <span className="text-[9px] opacity-40 font-mono">[{q.optionCodes[i]}]</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                             <Button variant="ghost" size="icon" className="text-primary h-12 w-12 rounded-xl" onClick={() => setEditingId(q.id)}>
+                              <Edit3 className="w-5 h-5" />
+                            </Button>
+                             <Button variant="ghost" size="icon" className="text-destructive h-12 w-12 rounded-xl" onClick={() => setImportedQuestions(prev => prev.filter(item => item.id !== q.id))}>
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                           <Button variant="ghost" size="icon" className="text-destructive h-12 w-12 rounded-xl" onClick={() => setImportedQuestions(prev => prev.filter((_, i) => i !== idx))}>
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        </div>
-                      </div>
+                      )}
                     </Card>
                   ))}
                   {importedQuestions.length === 0 && (
                     <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground opacity-40">
                       <Database className="w-20 h-20 mx-auto mb-6" />
-                      <p className="font-black uppercase tracking-widest text-sm">Forge Is Idle</p>
+                      <p className="font-black uppercase tracking-widest text-sm">Audit Forge Is Idle</p>
                     </div>
                   )}
                 </div>
@@ -413,7 +465,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <Button onClick={addManualQuestion} className="w-full h-16 rounded-2xl font-black bg-primary text-black shadow-neon transition-all hover:scale-[1.02] uppercase tracking-widest text-xs">
-                      <Plus className="w-5 h-5 mr-3" /> Insert into Staging
+                      <Plus className="w-5 h-5 mr-3" /> Insert into Staging Bank
                     </Button>
                   </div>
                 </Card>
