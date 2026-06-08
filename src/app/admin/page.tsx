@@ -28,6 +28,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Question, ClassLevel, Test, QuestionType, Subject } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const { toast } = useToast();
