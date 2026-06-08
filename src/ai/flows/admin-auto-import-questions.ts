@@ -54,7 +54,7 @@ Your goal is to extract questions and options with 100% fidelity.
 
 STRICT JSON OUTPUT PROTOCOL:
 1. Identify every question block.
-2. For every question, you MUST generate 4 unique, random 4-digit numeric codes (e.g. 1021, 1022, 1023, 1024).
+2. For every question, you MUST generate 4 unique, random 4-digit numeric codes (e.g. 1021, 1022, 1023, 1024). These codes MUST be different for every option in the entire set.
 3. The 'correctAnswer' must EXACTLY match one of the strings in the 'options' array.
 4. If options are labeled (A, B, C, D), extract the text following the labels.
 5. Use LaTeX-style notation for any mathematical formulas.`,
@@ -67,7 +67,7 @@ INPUTS:
 {{/if}}
 - Admin Context: {{{adminInstructions}}}
 
-Return a valid JSON array of question objects following the schema.`,
+Return a valid JSON array of question objects following the schema. Ensure the response is a valid JSON array and nothing else.`,
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(

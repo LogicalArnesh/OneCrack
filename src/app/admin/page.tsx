@@ -111,7 +111,7 @@ export default function AdminDashboard() {
       id: uuidv4(),
       questionText: manualQ.questionText!,
       questionType: manualQ.questionType as QuestionType,
-      options: manualQ.options,
+      options: manualQ.options || ['', '', '', ''],
       optionCodes: Array.from({length: 4}, () => Math.floor(1000 + Math.random() * 9000).toString()),
       correctAnswer: manualQ.correctAnswer!,
       explanation: manualQ.explanation,
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
       <div className="space-y-10 pb-20 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-5xl font-headline font-black tracking-tighter neon-text">Evaluation Forge</h1>
+            <h1 className="text-5xl font-headline font-black tracking-tighter neon-text text-primary">Evaluation Forge</h1>
             <p className="text-muted-foreground font-medium flex items-center gap-2">
               <Database className="w-4 h-4 text-primary" /> High-precision academic portal management
             </p>
@@ -439,13 +439,13 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {manualQ.options?.map((opt, i) => (
+                      {(manualQ.options || ['', '', '', '']).map((opt, i) => (
                         <div key={i} className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Option {String.fromCharCode(65 + i)}</Label>
                           <Input 
                             value={opt} 
                             onChange={e => {
-                              const newOpts = [...(manualQ.options || [])];
+                              const newOpts = [...(manualQ.options || ['', '', '', ''])];
                               newOpts[i] = e.target.value;
                               setManualQ({...manualQ, options: newOpts});
                             }}
