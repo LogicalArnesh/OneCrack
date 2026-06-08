@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, addDoc, collection } from 'firebase/firestore';
+import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Test, Attempt, TestResult } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
   }, [hasStarted, toast]);
 
   useEffect(() => {
-    if (test) {
+    if (test && !hasStarted) {
       setTimeLeft(test.totalTimeMinutes * 60);
       const initialAttempts: Record<string, Attempt> = {};
       test.questions.forEach(q => {
@@ -82,7 +82,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       });
       setAttempts(initialAttempts);
     }
-  }, [test]);
+  }, [test, hasStarted]);
 
   const finishTest = useCallback(async () => {
     if (!test || !user || isSubmitting) return;
@@ -112,12 +112,12 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       }
     });
 
-    const resultData: Omit<TestResult, 'id'> = {
+    const resultData = {
       testId: test.id,
       userId: user.uid,
       submissionId,
       timestamp: new Date().toISOString(),
-      attempts: finalAttempts as any,
+      attempts: finalAttempts,
       totalScore,
       maxScore: test.questions.length * (test.marksPerQuestion || 4),
       correctCount: correct,
@@ -146,30 +146,32 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
   }, [test, attempts, timeLeft, user, router, db, isSubmitting, toast]);
 
   useEffect(() => {
-    if (!hasStarted) return;
+    if (!hasStarted || isSubmitting) return;
+    
     if (timeLeft <= 0) {
       finishTest();
       return;
     }
+
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => prev - 1);
       
-      if (test && test.questions[currentIdx]) {
+      // Update time spent on current question
+      if (test?.questions[currentIdx]) {
         const qId = test.questions[currentIdx].id;
         setAttempts(prev => ({
           ...prev,
-          [qId]: { ...prev[qId], timeSpentSeconds: (prev[qId]?.timeSpentSeconds || 0) + 1 }
+          [qId]: { 
+            ...prev[qId], 
+            timeSpentSeconds: (prev[qId]?.timeSpentSeconds || 0) + 1,
+            status: prev[qId]?.status === 'not-visited' ? 'visited' : prev[qId]?.status 
+          }
         }));
       }
     }, 1000);
+
     return () => clearInterval(timer);
-  }, [timeLeft, hasStarted, currentIdx, test, finishTest]);
+  }, [timeLeft, hasStarted, isSubmitting, currentIdx, test, finishTest]);
 
   const handleOptionSelect = (option: string) => {
     if (!test) return;

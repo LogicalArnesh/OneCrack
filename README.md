@@ -5,7 +5,7 @@ A professional academic testing platform built with Next.js, Firebase, and Genki
 ## 🚀 Deployment Instructions
 
 ### 1. Link to GitHub
-Run these commands in your terminal:
+Run these commands in your terminal to push your code for the first time:
 ```bash
 git init
 git add .
@@ -15,7 +15,7 @@ git push -u origin main
 ```
 
 ### 2. Environment Variables (Netlify)
-In the Netlify Dashboard (**Site Settings > Environment Variables**), add the following:
+In the Netlify Dashboard (**Site Settings > Environment Variables**), add the following keys so the AI and Emails work:
 
 | Key | Value | Purpose |
 | :--- | :--- | :--- |
@@ -29,7 +29,6 @@ In the Netlify Dashboard (**Site Settings > Environment Variables**), add the fo
 
 ## Features
 - **Custom Student UID**: Students choose their own unique identifier for faster login.
-- **Secure Portal**: Firebase Auth & Firestore based secure login with View/Hide password functionality.
 - **AI Question Importer**: Admin can upload documents to extract questions via Genkit.
-- **Automated Reports**: Professional performance analysis sent directly to registered emails via SMTP.
 - **JEE-Adv Test Interface**: Professional palette, timing, and integrity monitoring.
+- **Automated Reports**: Performance analysis sent via SMTP after each test.

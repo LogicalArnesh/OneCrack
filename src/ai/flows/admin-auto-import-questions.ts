@@ -14,7 +14,7 @@ const QuestionSchema = z.object({
   questionText: z.string().describe("The full text of the question."),
   questionType: QuestionTypeSchema.describe("The classification of the question type."),
   options: z.array(z.string()).optional().describe("Exactly 4 options for MCQ type questions."),
-  correctAnswer: z.string().optional().describe("the exact text of the correct option."),
+  correctAnswer: z.string().optional().describe("The exact text of the correct option as it appears in the options list."),
   subject: z.string().describe("The academic subject (e.g., Biology, Physics, Chemistry, Mathematics)."),
   classLevel: z.enum(['10', '11', '12', 'Dropper']),
   explanation: z.string().optional().describe("A brief step-by-step solution or explanation.")
@@ -49,12 +49,13 @@ CONTEXT:
 {{/if}}
 
 EXTRACTION PROTOCOL:
-1. **Precision Extraction**: Identify question text, all options (usually A, B, C, D), and the correct answer.
+1. **Precision Extraction**: Identify question text, all options (usually labeled A, B, C, D), and the correct answer.
 2. **Subject Mapping**: If the document contains multiple subjects, categorize each question accurately.
-3. **Answer Key Integration**: If a separate Answer Key document is provided, strictly use it to map correct answers. If not, use your internal knowledge to solve the question and provide the correct answer.
-4. **Data Integrity**: For MCQs, ensure the 'options' array contains exactly 4 strings. If the document has more/less, normalize it to 4 if possible or extract as is.
-5. **Class Level**: Default to the class level provided in instructions unless specified otherwise in the text.
-6. **Explanations**: Generate or extract a brief step-by-step explanation for why the answer is correct.
+3. **Answer Key Integration**: If a separate Answer Key document is provided, strictly use it to map correct answers. If not, use your internal knowledge to solve the question.
+4. **Correct Answer Format**: The 'correctAnswer' field MUST contain the full text of the correct option, not just the letter (A, B, C, D).
+5. **Data Integrity**: For MCQs, ensure the 'options' array contains exactly 4 strings.
+6. **Class Level**: Default to the class level provided in instructions: {{{adminInstructions}}}.
+7. **Explanations**: Generate a brief step-by-step explanation for why the answer is correct.
 
 FORMATTING:
 Return a clean JSON array of questions matching the defined schema. Ensure question text is complete and options are properly mapped.`
@@ -68,7 +69,7 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   },
   async (input) => {
     const {output} = await importQuestionsPrompt(input);
-    if (!output) throw new Error('AI could not parse questions from the provided documents.');
+    if (!output || output.length === 0) throw new Error('AI could not parse questions from the provided documents.');
     
     return output.map(q => ({
       ...q,

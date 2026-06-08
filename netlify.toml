@@ -5,6 +5,5 @@
 [functions]
   node_bundler = "esbuild"
 
-# Setting timeout using the glob pattern object to satisfy the Netlify parser
-[functions."*"]
-  timeout = 60
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
