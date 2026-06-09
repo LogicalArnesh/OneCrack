@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, use } from 'react';
-import { useRouter } from 'navigation';
+import { useRouter } from 'next/navigation';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, addDoc, collection } from 'firebase/firestore';
 import { Test, Attempt, User as PortalUser } from '@/lib/types';
@@ -25,14 +25,14 @@ import {
   Shield,
   Clock,
   User as UserIcon,
-  Cpu
+  Cpu,
+  Zap
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -233,22 +233,18 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-hidden text-foreground">
       <AlertDialog open={showConsent} onOpenChange={setShowConsent}>
-        <AlertDialogContent className="rounded-[3rem] max-w-2xl p-14 border-primary/20 bg-card shadow-3xl">
-          <AlertDialogHeader>
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-8 border border-primary/20 shadow-neon-sm">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-card border border-primary/20 rounded-[3rem] max-w-2xl p-14 shadow-3xl text-center space-y-8">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto border border-primary/20 shadow-neon-sm">
               <ShieldAlert className="w-12 h-12" />
             </div>
-            <AlertDialogTitle className="text-center text-4xl font-headline font-black neon-text tracking-tighter uppercase">Integrity Consent</AlertDialogTitle>
-            <AlertDialogDescription className="text-center space-y-8 pt-6">
-              <p className="text-lg font-medium leading-relaxed">By starting this evaluation, you agree to the OneCrack Anti-Cheat Protocol.</p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center mt-12">
-            <AlertDialogAction onClick={() => { setHasStarted(true); setShowConsent(false); }} className="w-full h-16 rounded-2xl font-black bg-primary text-black uppercase tracking-[0.2em] text-xs">
+            <h2 className="text-4xl font-headline font-black neon-text tracking-tighter uppercase">Integrity Consent</h2>
+            <p className="text-lg font-medium leading-relaxed text-muted-foreground">By starting this evaluation, you agree to the OneCrack Anti-Cheat Protocol. Your biometric signals and browser focus will be monitored.</p>
+            <Button onClick={() => { setHasStarted(true); setShowConsent(false); }} className="w-full h-16 rounded-2xl font-black bg-primary text-black uppercase tracking-[0.2em] text-xs">
               INITIALIZE PORTAL
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+            </Button>
+          </div>
+        </div>
       </AlertDialog>
 
       <header className="h-24 border-b border-white/5 bg-card/40 backdrop-blur-3xl flex items-center justify-between px-10 z-50">
@@ -276,7 +272,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-         {/* Main Question Area */}
         <div className="flex-1 overflow-y-auto p-16 md:p-24 relative custom-scrollbar">
           <div className="max-w-4xl mx-auto space-y-16 relative">
             <div className="flex items-center justify-between border-b border-white/5 pb-10">
@@ -347,9 +342,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
-        {/* High-Fidelity Sidebar */}
         <aside className="w-[450px] border-l border-white/5 bg-card/20 backdrop-blur-3xl hidden xl:flex flex-col p-12 space-y-12">
-          {/* Candidate Profile */}
           <div className="space-y-6">
             <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Candidate Identity</h3>
             <div className="p-8 rounded-[2rem] bg-white/2 border border-white/5 space-y-4">
@@ -367,16 +360,15 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span className="text-[9px] font-black uppercase text-primary">Connected to Server</span>
                 </div>
-                <div className="flex items-end gap-1">
-                  <div className="w-1.5 h-3 bg-primary/30 rounded-t-sm animate-signal" />
-                  <div className="w-1.5 h-5 bg-primary/30 rounded-t-sm animate-signal-delayed" />
-                  <div className="w-1.5 h-7 bg-primary/30 rounded-t-sm animate-signal-more-delayed" />
+                <div className="flex items-end gap-1 h-6 items-end">
+                  <div className="w-1.5 h-3 bg-primary rounded-t-sm animate-signal" />
+                  <div className="w-1.5 h-5 bg-primary rounded-t-sm animate-signal-delayed" />
+                  <div className="w-1.5 h-7 bg-primary rounded-t-sm animate-signal-more-delayed" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Time & Sync */}
           <div className="space-y-6">
             <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Neural Time Sync</h3>
             <div className="p-8 rounded-[2rem] bg-white/2 border border-white/5 text-center space-y-2">
@@ -388,7 +380,6 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
 
-          {/* Matrix */}
           <div className="space-y-8 flex-1">
             <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Evaluation Matrix</h3>
             <div className="grid grid-cols-5 gap-4">
@@ -411,7 +402,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
           </div>
 
           <div className="p-8 rounded-[2rem] bg-primary/5 border border-primary/20 flex items-center gap-6">
-            <Cpu className="w-8 h-8 text-primary shrink-0" />
+            <Zap className="w-8 h-8 text-primary shrink-0 animate-pulse" />
             <p className="text-[10px] font-black uppercase text-primary leading-relaxed tracking-widest">
               Core Monitoring Active • Zero Malpractice Tolerance
             </p>
