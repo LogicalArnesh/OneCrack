@@ -19,7 +19,8 @@ import {
   Wifi, 
   Database, 
   Clock,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { generateStudyPlan, StudyPlanOutput } from '@/ai/flows/generate-study-plan';
@@ -121,7 +122,7 @@ export default function Dashboard() {
                <Clock className="w-5 h-5 text-primary" />
                <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Neural Time Sync</p>
              </div>
-             <p className="text-4xl font-mono font-black text-white tracking-widest">{currentTime || '--:--:-- --'}</p>
+             <p className="text-4xl font-mono font-black text-white tracking-widest">{currentTime || '--:--:--'}</p>
              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Indian Standard Time (IST)</p>
           </div>
         </div>
