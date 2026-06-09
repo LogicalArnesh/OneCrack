@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { adminAutoImportQuestions } from '@/ai/flows/admin-auto-import-questions';
 import { useToast } from '@/hooks/use-toast';
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Detect subject automatically. Extract all questions and their 4 options. Identify correct answer from context.');
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions. Generate 4-digit forensic codes for every option. Identify subject (Physics/Chemistry/Math/Biology) per question.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
