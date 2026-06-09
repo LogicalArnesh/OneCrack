@@ -26,7 +26,7 @@ const AdminAutoImportQuestionsInputSchema = z.object({
   fileDataUri: z.string().describe("Data URI of the source PDF/DOCX."),
   answerKeyDataUri: z.string().optional().describe("Data URI of the key if separate."),
   fileName: z.string(),
-  adminInstructions: z.string().optional()
+  adminInstructions: z.string().optional().describe("Specific instructions from the admin for the AI.")
 });
 
 const AdminAutoImportQuestionsOutputSchema = z.array(QuestionSchema);
@@ -65,7 +65,7 @@ INPUTS:
 {{#if answerKeyDataUri}}
 - External Answer Key: {{media url=answerKeyDataUri}}
 {{/if}}
-- Admin Context: {{{adminInstructions}}}
+- Admin Context/Instructions: {{{adminInstructions}}}
 
 Return a valid JSON array of question objects following the schema. Ensure the response is a valid JSON array and nothing else.`,
 });

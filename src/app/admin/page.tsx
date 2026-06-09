@@ -25,7 +25,9 @@ import {
   Edit3,
   Save,
   X,
-  AlertCircle
+  BrainCircuit,
+  Terminal,
+  FileSearch
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -45,6 +47,7 @@ export default function AdminDashboard() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with their 4 options. Identify the correct answer from the context. Subject is Physics.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -134,7 +137,7 @@ export default function AdminDashboard() {
         fileDataUri: sourceFiles.questions.dataUri,
         answerKeyDataUri: sourceFiles.answerKey.dataUri || undefined,
         fileName: sourceFiles.questions.file?.name || 'source.pdf',
-        adminInstructions: `Subject: ${testConfig.subject}, Class: ${testConfig.classLevel}. Extract all options and generate 4-digit forensic codes.`
+        adminInstructions: `Subject: ${testConfig.subject}, Class: ${testConfig.classLevel}. ${adminInstructions}`
       });
       
       const formatted = result.map(q => ({
@@ -278,13 +281,13 @@ export default function AdminDashboard() {
             <Card className="rounded-[2.5rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <FileUp className="w-5 h-5 text-accent" /> Source Vault
+                  <BrainCircuit className="w-5 h-5 text-accent" /> AI Neural Forge
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Question Repository</Label>
+                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Source Document</Label>
                     {sourceFiles.questions.file && (
                       <button onClick={() => removeFile('questions')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
                         <FileX className="w-3 h-3" /> REMOVE
@@ -302,21 +305,15 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-3">
-                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Answer Integrity Key</Label>
-                    {sourceFiles.answerKey.file && (
-                      <button onClick={() => removeFile('answerKey')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
-                        <FileX className="w-3 h-3" /> REMOVE
-                      </button>
-                    )}
-                  </div>
+                  <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Neural Instructions</Label>
                   <div className="relative">
-                    <Input ref={aInputRef} type="file" onChange={handleFileChange('answerKey')} accept=".pdf,.docx" className="rounded-xl h-12 bg-muted/20 cursor-pointer border-dashed border-accent/30" />
-                    {sourceFiles.answerKey.file && <div className="absolute inset-0 bg-background rounded-xl flex items-center px-4 gap-3 border border-accent/40">
-                      <FileText className="w-5 h-5 text-accent" />
-                      <span className="text-xs font-bold truncate flex-1">{sourceFiles.answerKey.file.name}</span>
-                      <CheckCircle2 className="w-4 h-4 text-accent" />
-                    </div>}
+                    <Terminal className="absolute left-3 top-3 w-4 h-4 text-accent/50" />
+                    <Textarea 
+                      placeholder="Give specific parsing rules..." 
+                      className="rounded-xl bg-muted/20 border-accent/20 pl-10 min-h-[100px] text-xs font-mono"
+                      value={adminInstructions}
+                      onChange={e => setAdminInstructions(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -418,9 +415,9 @@ export default function AdminDashboard() {
                   ))}
                   {importedQuestions.length === 0 && (
                     <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground opacity-40">
-                      <Database className="w-20 h-20 mx-auto mb-6" />
+                      <FileSearch className="w-20 h-20 mx-auto mb-6" />
                       <p className="font-black uppercase tracking-widest text-sm">Audit Forge Is Idle</p>
-                      <p className="text-[10px] uppercase mt-2">Upload a PDF to initialize neural parsing</p>
+                      <p className="text-[10px] uppercase mt-2">Upload a source document to initialize neural parsing</p>
                     </div>
                   )}
                 </div>
