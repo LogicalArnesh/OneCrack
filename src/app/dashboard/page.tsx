@@ -55,7 +55,7 @@ export default function Dashboard() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid) : null, [db, user]);
   const { data: userProfile } = useDoc<PortalUser>(userProfileRef);
 
-  const testsQuery = useMemoFirebase(() => query(collection(db, 'tests'), limit(3)), [db]);
+  const testsQuery = useMemoFirebase(() => query(collection(db, 'tests'), limit(5)), [db]);
   const { data: featuredTests } = useCollection<Test>(testsQuery);
 
   const resultsQuery = useMemoFirebase(() => {
@@ -109,7 +109,11 @@ export default function Dashboard() {
                 SYSTEM ACTIVE • {userProfile?.classLevel ? `CLASS ${userProfile.classLevel}` : 'AUTHENTICATING'}
               </Badge>
               <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                <Wifi className="w-3 h-3 text-primary animate-pulse" /> SIGNAL 100%
+                <div className="flex items-end gap-1 h-3">
+                   <div className="w-1 bg-primary rounded-t-sm animate-signal h-1.5" />
+                   <div className="w-1 bg-primary rounded-t-sm animate-signal-delayed h-2.5" />
+                   <div className="w-1 bg-primary rounded-t-sm animate-signal-more-delayed h-3.5" />
+                </div> SIGNAL ACTIVE
               </div>
             </div>
             <h1 className="text-6xl font-headline font-black text-white tracking-tighter neon-text leading-none">
@@ -127,29 +131,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Global Statistics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { icon: ClipboardList, label: 'EVALUATIONS', value: (featuredTests?.length || 0).toString().padStart(2, '0'), color: 'text-primary', bg: 'bg-primary/5' },
-            { icon: Award, label: 'AVG PRECISION', value: '86.4%', color: 'text-accent', bg: 'bg-accent/5' },
-            { icon: TrendingUp, label: 'COMPLETED', value: (recentResults?.length || 0).toString().padStart(2, '0'), color: 'text-white', bg: 'bg-muted/40' }
-          ].map((stat, i) => (
-            <Card key={i} className="rounded-[2.5rem] bg-card/40 border-border hover:border-primary/30 transition-all group relative overflow-hidden">
-              <div className={cn("absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity", stat.bg)} />
-              <CardHeader className="pb-2">
-                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-white/5", stat.bg, stat.color)}>
-                  <stat.icon className="w-7 h-7" />
-                </div>
-                <CardTitle className="text-xs font-black uppercase tracking-[0.4em] text-muted-foreground">{stat.label}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={cn("text-6xl font-headline font-black drop-shadow-2xl", stat.color)}>{stat.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Evaluation & AI Grid */}
+        {/* Evaluations View Only */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
            {/* Active Tests Queue */}
            <div className="lg:col-span-7 space-y-8">
@@ -192,48 +174,24 @@ export default function Dashboard() {
              </div>
            </div>
 
-           {/* AI Neural Roadmap */}
+           {/* Attempted/Stats */}
            <div className="lg:col-span-5 space-y-8">
              <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent border border-accent/20">
-                 <Sparkles className="w-5 h-5" />
+                 <TrendingUp className="w-5 h-5" />
                </div>
-               <h3 className="text-3xl font-headline font-bold">Neural Insights</h3>
+               <h3 className="text-3xl font-headline font-bold">Activity Stats</h3>
              </div>
-             <Card className="rounded-[3rem] border-2 border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card overflow-hidden shadow-3xl">
-                <CardContent className="p-12">
-                  {studyPlan ? (
-                    <div className="space-y-8 animate-in fade-in zoom-in duration-500">
-                      <div className="p-8 rounded-[2rem] bg-primary/5 border border-primary/20 shadow-inner">
-                        <p className="text-sm italic font-medium text-white/90 leading-relaxed text-center">"{studyPlan.motivationalQuote}"</p>
-                      </div>
-                      <div className="space-y-4">
-                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] text-center">Tactical Summary</p>
-                        <p className="text-xs text-muted-foreground text-center leading-relaxed font-medium">{studyPlan.summary}</p>
-                      </div>
-                      <Button variant="outline" className="w-full rounded-[1.5rem] h-14 border-primary/30 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-black transition-all" onClick={() => setStudyPlan(null)}>
-                        RE-INITIALIZE ANALYSIS
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center space-y-10">
-                      <div className="w-20 h-20 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary mx-auto border-2 border-primary/20 shadow-neon-sm">
-                        <Sparkles className="w-10 h-10 animate-pulse" />
-                      </div>
-                      <div className="space-y-4">
-                        <p className="font-black text-2xl tracking-tight text-white uppercase tracking-widest">Neural Mentorship</p>
-                        <p className="text-sm text-muted-foreground leading-relaxed font-medium max-w-xs mx-auto">
-                          Our LLM engine analyzes your performance metrics to generate a high-impact, 7-day tactical study roadmap.
-                        </p>
-                      </div>
-                      <Button onClick={handleGenerateStudyPlan} disabled={isGeneratingPlan} className="w-full rounded-[1.5rem] h-16 font-black bg-primary text-black shadow-neon transition-transform active:scale-95 text-[10px] tracking-[0.2em] uppercase">
-                        {isGeneratingPlan ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6 mr-3" />}
-                        INITIALIZE AI MENTOR
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-             </Card>
+             <div className="grid grid-cols-1 gap-4">
+                <Card className="rounded-[2.5rem] bg-card/40 border-border p-8">
+                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-6">Attempts Completed</p>
+                   <p className="text-7xl font-headline font-black text-primary">{(recentResults?.length || 0).toString().padStart(2, '0')}</p>
+                </Card>
+                <Card className="rounded-[2.5rem] bg-card/40 border-border p-8">
+                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-6">Avg Precision</p>
+                   <p className="text-7xl font-headline font-black text-accent">86.4%</p>
+                </Card>
+             </div>
            </div>
         </div>
 
@@ -246,7 +204,7 @@ export default function Dashboard() {
           <div className="space-y-2 relative z-10 text-center md:text-left">
             <p className="text-lg font-black text-destructive uppercase tracking-[0.2em]">High-Integrity Protocol Active</p>
             <p className="text-sm font-medium text-destructive/80 leading-relaxed max-w-4xl">
-              Strict evaluation monitoring is active for all live assessments. Use of external resources, tab switching, or session manipulation will result in immediate disqualification and permanent identity revocation.
+              Strict evaluation monitoring is active for all live assessments. Any forensic anomalies detected in response codes will be flagged for investigation.
             </p>
           </div>
         </div>

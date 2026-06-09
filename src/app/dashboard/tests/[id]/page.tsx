@@ -367,7 +367,11 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span className="text-[9px] font-black uppercase text-primary">Connected to Server</span>
                 </div>
-                <Wifi className="w-4 h-4 text-primary" />
+                <div className="flex items-end gap-1">
+                  <div className="w-1.5 h-3 bg-primary/30 rounded-t-sm animate-signal" />
+                  <div className="w-1.5 h-5 bg-primary/30 rounded-t-sm animate-signal-delayed" />
+                  <div className="w-1.5 h-7 bg-primary/30 rounded-t-sm animate-signal-more-delayed" />
+                </div>
               </div>
             </div>
           </div>

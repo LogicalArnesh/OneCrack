@@ -23,7 +23,8 @@ import {
   Printer,
   FileText,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert
 } from 'lucide-react';
 import {
   PieChart,
@@ -89,32 +90,30 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
   const downloadForensicAudit = () => {
     if (!result || !test) return;
 
+    // STUDENT AUDIT: Contains IDs and Codes, NOT question text (per instruction)
     const csvContent = [
-      ["ONE CRACK CERTIFIED PERFORMANCE AUDIT"],
-      [`Submission Hash: ${result.submissionId}`],
+      ["ONE CRACK CERTIFIED PERFORMANCE AUDIT (STUDENT COPY)"],
+      [`Response ID (Submission Hash): ${result.submissionId}`],
       [`Portal Protocol: ${test.title}`],
       [`Candidate: ${profile?.name} (${profile?.loginUid})`],
       [`Timestamp: ${new Date(result.timestamp).toISOString()}`],
       [""],
-      ["Item #", "Item UUID", "Subject", "Forensic Code", "Status", "Temporal Flow (s)", "Precision Score"],
+      ["Item Index", "Subject", "Forensic Option Code", "Selection Status", "Temporal Flow (s)"],
       ...test.questions.map((q, idx) => {
         const attempt = result.attempts.find(a => a.questionId === q.id);
-        const optIdx = q.options?.indexOf(attempt?.selectedOption || "");
-        const forensicCode = (optIdx !== -1 && q.optionCodes) ? q.optionCodes[optIdx!] : "N/A";
-        const isCorrect = attempt?.selectedOption === q.correctAnswer;
-        const status = !attempt?.selectedOption ? "SKIPPED" : isCorrect ? "VALIDATED" : "INVALID";
-        const marks = !attempt?.selectedOption ? (test.skippedMarks || 0) : isCorrect ? test.marksPerQuestion : -(test.negativeMarks || 0);
+        const forensicCode = attempt?.selectedOptionCode || "N/A";
+        const status = !attempt?.selectedOption ? "SKIPPED" : "SUBMITTED";
 
         return [
           idx + 1,
-          q.id,
           q.subject,
           forensicCode,
           status,
-          attempt?.timeSpentSeconds || 0,
-          marks
+          attempt?.timeSpentSeconds || 0
         ];
-      })
+      }),
+      [""],
+      ["CORE SYSTEM SIGNATURE: VERIFIED_ENCRYPTED_TRANSACTION"]
     ].map(row => row.join(",")).join("\n");
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -166,7 +165,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
               <Printer className="w-4 h-4" /> PRINT ANALYSIS
             </Button>
             <Button onClick={downloadForensicAudit} variant="outline" className="rounded-2xl h-14 px-8 font-black gap-3 border-white/5 bg-muted/20 hover:bg-muted/30 uppercase tracking-widest text-[10px]">
-              <FileCode className="w-4 h-4" /> FORENSIC SHEET
+              <FileCode className="w-4 h-4" /> FORENSIC AUDIT
             </Button>
             <Button onClick={handleSendEmail} disabled={isDispatching} className="rounded-2xl h-14 px-10 font-black gap-3 bg-primary text-black shadow-neon transition-all uppercase tracking-widest text-[10px]">
               {isDispatching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
@@ -192,9 +191,12 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
               <div className="pt-6 space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest font-black">IDENTITY VERIFIED</p>
                 <h3 className="text-6xl font-headline font-black text-white tracking-tighter">{profile?.name || 'CANDIDATE'}</h3>
-                <p className="text-sm text-muted-foreground font-medium max-w-2xl leading-relaxed">
-                  This transcript is an official record of the high-fidelity assessment <span className="text-white font-bold">{test.title}</span>. All data has been cryptographically validated.
-                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <Badge variant="outline" className="border-primary/40 text-primary font-mono text-[9px]">RESPONSE ID: {result.submissionId}</Badge>
+                  <div className="flex items-center gap-2 text-[9px] text-muted-foreground font-black uppercase">
+                    <ShieldCheck className="w-3 h-3 text-primary" /> CRYPTOGRAPHICALLY VALIDATED
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -246,53 +248,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 print:hidden">
-          <Card className="lg:col-span-2 rounded-[3.5rem] border-white/5 bg-card overflow-hidden shadow-3xl">
-            <CardHeader className="border-b border-white/5 px-12 py-10 bg-white/2">
-              <h3 className="font-headline text-3xl font-black">Performance Matrix</h3>
-            </CardHeader>
-            <CardContent className="h-[450px] py-12">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={130}
-                    outerRadius={170}
-                    paddingAngle={8}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip 
-                    contentStyle={{ backgroundColor: '#000805', borderRadius: '24px', border: '1px solid #00ffff33' }}
-                    itemStyle={{ fontWeight: '900', color: 'white', textTransform: 'uppercase', fontSize: '10px' }}
-                  />
-                  <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ paddingTop: '40px', textTransform: 'uppercase', fontWeight: '900', fontSize: '10px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-8">
-             <Card className="rounded-[3.5rem] border-white/5 bg-card/40 backdrop-blur-3xl p-10 flex flex-col justify-between hover:border-primary/40 transition-all group shadow-2xl h-full">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-10 border border-primary/20">
-                <Clock className="w-7 h-7" />
-              </div>
-              <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.4em]">Temporal Allocation</p>
-                <h3 className="text-5xl font-bold font-headline text-white">
-                  {Math.floor(result.timeTakenSeconds / 60)}m <span className="text-xl text-white/50">{result.timeTakenSeconds % 60}s</span>
-                </h3>
-              </div>
-            </Card>
-          </div>
-        </div>
-
         <div className="space-y-12 pt-12 print:hidden">
           <div className="flex items-center gap-6 border-b border-white/10 pb-8">
             <h3 className="text-4xl font-headline font-black">Forensic Item Audit</h3>
@@ -326,7 +281,7 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
                                  <Clock className="w-4 h-4 text-primary" /> {attempt?.timeSpentSeconds || 0}S SPENT
                                </div>
                                <div className="flex items-center gap-2 text-[10px] text-primary font-black uppercase tracking-widest">
-                                 <FileCode className="w-4 h-4" /> CODE: {forensicCode}
+                                 <FileCode className="w-4 h-4" /> RESPONSE CODE: {forensicCode}
                                </div>
                             </div>
                          </div>

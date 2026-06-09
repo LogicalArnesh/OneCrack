@@ -21,7 +21,7 @@ export interface Question {
   questionType: QuestionType;
   options?: string[];
   optionCodes?: string[]; // Unique 4-digit numeric identifiers for each option (JEE-Adv Style)
-  correctAnswer?: string;
+  correctAnswer: string;
   subject: string;
   classLevel: ClassLevel;
   imageIncluded?: boolean;
@@ -67,7 +67,7 @@ export interface TestResult {
   id: string;
   testId: string;
   userId: string;
-  submissionId: string;
+  submissionId: string; // Used as Response ID
   timestamp: string;
   attempts: Attempt[];
   totalScore: number;

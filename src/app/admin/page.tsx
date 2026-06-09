@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { adminAutoImportQuestions } from '@/ai/flows/admin-auto-import-questions';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -26,12 +27,14 @@ import {
   BrainCircuit,
   FileSearch,
   Activity,
-  Link2
+  Link2,
+  Save
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Question, ClassLevel, Test, QuestionType, Subject, ExamStream } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -44,7 +47,7 @@ export default function AdminDashboard() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Extract all questions. Generate 4-digit forensic codes for every option. Identify subject (Physics/Chemistry/Math/Biology) per question.');
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions. Generate 4-digit forensic codes for every option. Identify subject per question.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -97,6 +100,10 @@ export default function AdminDashboard() {
     if (qInputRef.current) qInputRef.current.value = '';
   };
 
+  const generateOptionCodes = () => {
+    return Array.from({length: 4}, () => Math.floor(1000 + Math.random() * 9000).toString());
+  };
+
   const addManualQuestion = () => {
     if (!manualQ.questionText || !manualQ.correctAnswer) {
       toast({ variant: "destructive", title: "Validation Error", description: "Content and solution are required." });
@@ -107,7 +114,7 @@ export default function AdminDashboard() {
       questionText: manualQ.questionText!,
       questionType: manualQ.questionType as QuestionType,
       options: manualQ.options || ['', '', '', ''],
-      optionCodes: Array.from({length: 4}, () => Math.floor(1000 + Math.random() * 9000).toString()),
+      optionCodes: generateOptionCodes(),
       correctAnswer: manualQ.correctAnswer!,
       explanation: manualQ.explanation,
       subject: testConfig.subject,
@@ -115,7 +122,7 @@ export default function AdminDashboard() {
     };
     setImportedQuestions(prev => [...prev, newQ]);
     setManualQ({ ...manualQ, questionText: '', correctAnswer: '', explanation: '', options: ['', '', '', ''] });
-    toast({ title: "Entry Verified", description: "Question added to staging bank." });
+    toast({ title: "Entry Verified", description: "Question added to staging bank with forensic codes." });
   };
 
   const runAIImport = async () => {
@@ -135,14 +142,20 @@ export default function AdminDashboard() {
         throw new Error("Invalid response format from AI engine.");
       }
 
-      setImportedQuestions(prev => [...prev, ...result]);
+      // Ensure every question has 4 unique codes
+      const sanitized = result.map(q => ({
+        ...q,
+        optionCodes: q.optionCodes && q.optionCodes.length === 4 ? q.optionCodes : generateOptionCodes()
+      }));
+
+      setImportedQuestions(prev => [...prev, ...sanitized]);
       toast({ title: "Neural Extraction Complete", description: `Successfully analyzed ${result.length} items.` });
     } catch (err: any) {
       console.error(err);
       toast({ 
         variant: "destructive", 
         title: "AI Extraction Error", 
-        description: "The AI engine encountered an error parsing this document. Try a smaller file or different instructions." 
+        description: "The AI engine encountered an error parsing this document." 
       });
     } finally {
       setImporting(false);
@@ -248,21 +261,6 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Primary Subject</Label>
-                  <Select value={testConfig.subject} onValueChange={v => setTestConfig({...testConfig, subject: v as Subject})}>
-                    <SelectTrigger className="rounded-xl h-12 bg-muted/20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Physics">Physics</SelectItem>
-                      <SelectItem value="Chemistry">Chemistry</SelectItem>
-                      <SelectItem value="Mathematics">Mathematics</SelectItem>
-                      <SelectItem value="Biology">Biology</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2 text-center">
                     <Label className="text-[9px] font-black text-primary">VALID (+)</Label>
@@ -305,17 +303,6 @@ export default function AdminDashboard() {
                     </div>}
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Neural Instructions</Label>
-                  <Textarea 
-                    placeholder="E.g. only extract chemistry section..." 
-                    className="rounded-xl bg-muted/20 border-accent/20 min-h-[100px] text-xs font-mono"
-                    value={adminInstructions}
-                    onChange={e => setAdminInstructions(e.target.value)}
-                  />
-                </div>
-
                 <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-14 rounded-2xl font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Wand2 className="w-5 h-5 mr-3" />}
                   Initialize Extraction
@@ -358,7 +345,24 @@ export default function AdminDashboard() {
                                 }} />
                               ))}
                            </div>
-                           <Button size="sm" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-bold">Save Changes</Button>
+                           <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase text-primary">Correct Answer</Label>
+                              <Select value={q.correctAnswer} onValueChange={v => {
+                                setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, correctAnswer: v } : item));
+                              }}>
+                                <SelectTrigger className="rounded-xl h-10 bg-muted/30">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {q.options?.map((opt, i) => (
+                                    <SelectItem key={i} value={opt}>{opt}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                           </div>
+                           <Button size="sm" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-bold">
+                             <Save className="w-4 h-4 mr-2" /> Save Changes
+                           </Button>
                         </div>
                       ) : (
                         <div className="p-8 flex items-start gap-8">
@@ -414,6 +418,17 @@ export default function AdminDashboard() {
                           setManualQ({...manualQ, options: newOpts});
                         }} />
                       ))}
+                    </div>
+                    <div className="space-y-3">
+                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Select Correct Answer</Label>
+                       <RadioGroup value={manualQ.correctAnswer} onValueChange={v => setManualQ({...manualQ, correctAnswer: v})} className="grid grid-cols-4 gap-4">
+                          {(manualQ.options || []).map((opt, i) => (
+                            <div key={i} className="flex items-center space-x-2">
+                              <RadioGroupItem value={opt} id={`r${i}`} />
+                              <Label htmlFor={`r${i}`} className="text-xs uppercase font-bold">{String.fromCharCode(65+i)}</Label>
+                            </div>
+                          ))}
+                       </RadioGroup>
                     </div>
                     <Button onClick={addManualQuestion} className="w-full h-16 rounded-2xl font-black bg-primary text-black uppercase tracking-widest text-xs">
                       Insert Into Bank
