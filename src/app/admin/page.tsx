@@ -30,7 +30,8 @@ import {
   Link2,
   Save,
   Cpu,
-  ShieldCheck
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -49,7 +50,7 @@ export default function AdminForge() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Identify subject per question. Generate 4-digit forensic codes.');
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Identify subject per question. Use forensic codes.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -137,7 +138,7 @@ export default function AdminForge() {
       const result = await adminAutoImportQuestions({
         fileDataUri: sourceFiles.questions.dataUri,
         fileName: sourceFiles.questions.file?.name || 'source.pdf',
-        adminInstructions: `Stream: ${testConfig.examStream}, Class: ${testConfig.classLevel}. ${adminInstructions}`
+        adminInstructions: `Target Stream: ${testConfig.examStream}, Class Level: ${testConfig.classLevel}. Custom Prompt: ${adminInstructions}`
       });
       
       const sanitized = result.map(q => ({
@@ -146,13 +147,13 @@ export default function AdminForge() {
       }));
 
       setImportedQuestions(prev => [...prev, ...sanitized]);
-      toast({ title: "Neural Extraction Success", description: `Indexed ${result.length} questions from source.` });
+      toast({ title: "Neural Success", description: `Injected ${result.length} questions into the bank.` });
     } catch (err: any) {
-      console.error(err);
+      console.error("Extraction Error:", err);
       toast({ 
         variant: "destructive", 
-        title: "AI Pipeline Error", 
-        description: "Document structure too complex. Use Bulk CSV or Manual mode." 
+        title: "Neural Pipeline Error", 
+        description: err.message || "Failed to parse document. Try splitting the PDF into smaller sections." 
       });
     } finally {
       setImporting(false);
@@ -160,7 +161,10 @@ export default function AdminForge() {
   };
 
   const publishTest = async () => {
-    if (!user || importedQuestions.length === 0) return;
+    if (!user || importedQuestions.length === 0) {
+      toast({ variant: "destructive", title: "Forge Empty", description: "No questions detected in the staging bank." });
+      return;
+    }
     setIsPublishing(true);
     const testId = uuidv4();
     const finalTest: Test = {
@@ -300,9 +304,18 @@ export default function AdminForge() {
                     </div>}
                   </div>
                 </div>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Neural Instructions</Label>
+                   <Textarea 
+                     placeholder="Customize AI extraction behavior..." 
+                     className="rounded-xl h-24 bg-muted/10 border-accent/20 text-xs"
+                     value={adminInstructions}
+                     onChange={e => setAdminInstructions(e.target.value)}
+                   />
+                </div>
                 <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-16 rounded-[2rem] font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
-                  {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Wand2 className="w-5 h-5 mr-3" />}
-                  Run Neural Extraction
+                  {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Zap className="w-5 h-5 mr-3" />}
+                  {importing ? "Extracting..." : "Run Neural Extraction"}
                 </Button>
               </CardContent>
             </Card>

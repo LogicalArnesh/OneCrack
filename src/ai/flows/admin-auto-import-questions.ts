@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview High-precision Neural OCR Genkit flow for extracting academic questions.
- * Optimized for JEE/NEET streams and forensic option tracking.
+ * Optimized for mass extraction from complex PDFs and Iterative Forge population.
  */
 
 import {ai} from '@/ai/genkit';
@@ -18,14 +18,14 @@ const QuestionSchema = z.object({
   options: z.array(z.string()).describe("Exactly 4 distinct answer options."),
   optionCodes: z.array(z.string()).describe("4 unique generated 4-digit numeric codes."),
   correctAnswer: z.string().describe("Exact text of the correct option."),
-  subject: z.string().describe("Detected subject (Physics/Chemistry/Biology/Mathematics/General)."),
+  subject: z.string().describe("Detected subject (Physics/Chemistry/Biology/Mathematics)."),
   explanation: z.string().optional().describe("Solution logic.")
 });
 
 const AdminAutoImportQuestionsInputSchema = z.object({
   fileDataUri: z.string().describe("Data URI of source document."),
   fileName: z.string(),
-  adminInstructions: z.string().optional().describe("Neural override instructions.")
+  adminInstructions: z.string().optional().describe("Manual prompt overrides.")
 });
 
 const AdminAutoImportQuestionsOutputSchema = z.array(QuestionSchema);
@@ -49,21 +49,21 @@ const importQuestionsPrompt = ai.definePrompt({
     ]
   },
   system: `You are a High-Precision Forensic Academic OCR Engine. 
-Your goal is to extract questions with 100% fidelity.
+Your goal is to extract questions with 100% fidelity from complex academic papers (including multi-column layouts).
 
 STRICT JSON PROTOCOL:
 1. Identify every question and its 4 options.
-2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 1022). These MUST be unique across the entire document.
-3. Determine the subject (Physics, Chemistry, Biology, Mathematics) for each question based on context.
-4. Use LaTeX for formulas where appropriate.
-5. Identify the correct answer exactly as it appears in the options.
-6. If the document is an answer key, extract the mappings.`,
-  prompt: `TASK: Extract all academic questions from the provided source.
+2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 1022). These MUST be unique.
+3. Determine the subject (Physics, Chemistry, Biology, Mathematics) for each question.
+4. Use LaTeX for formulas.
+5. Identify the correct answer exactly as it appears.
+6. If a question has an image placeholder (e.g., Fig. 1), include that context in the questionText.`,
+  prompt: `TASK: Extract all academic questions from the provided document.
 
 SOURCE: {{media url=fileDataUri}}
 INSTRUCTIONS: {{{adminInstructions}}}
 
-Return a valid JSON array of question objects.`,
+Return a valid JSON array of question objects. If the document is too large, extract as many as possible before reaching token limits.`,
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -75,11 +75,11 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   async (input) => {
     try {
       const {output} = await importQuestionsPrompt(input);
-      if (!output) throw new Error('Neural extraction failed.');
+      if (!output || output.length === 0) throw new Error('Neural extraction returned no data. Check document format.');
       return output.map(q => ({ ...q, id: q.id || uuidv4() }));
     } catch (error: any) {
       console.error("AI Flow Error:", error);
-      throw new Error(error.message || "Extraction failed.");
+      throw new Error(error.message || "Extraction pipeline failed.");
     }
   }
 );
