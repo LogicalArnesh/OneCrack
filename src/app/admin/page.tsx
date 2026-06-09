@@ -50,7 +50,7 @@ export default function AdminForge() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Use forensic codes.');
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Map answers to forensic codes.');
   const [sourceUrl, setSourceUrl] = useState('');
   
   const [testConfig, setTestConfig] = useState({
@@ -131,7 +131,7 @@ export default function AdminForge() {
 
   const runAIImport = async () => {
     if (!sourceFiles.questions.dataUri && !sourceUrl) {
-      toast({ variant: "destructive", title: "Source Missing", description: "Upload a document or provide a Drive URL to initialize extraction." });
+      toast({ variant: "destructive", title: "Source Missing", description: "Provide a direct Drive URL or upload a PDF to initiate extraction." });
       return;
     }
     setImporting(true);
@@ -140,7 +140,7 @@ export default function AdminForge() {
         fileDataUri: sourceFiles.questions.dataUri || undefined,
         sourceUrl: sourceUrl || undefined,
         fileName: sourceFiles.questions.file?.name || 'source.pdf',
-        adminInstructions: `Target Stream: ${testConfig.examStream}, Class Level: ${testConfig.classLevel}. Custom Prompt: ${adminInstructions}`
+        adminInstructions: `Target Stream: ${testConfig.examStream}. Instructions: ${adminInstructions}`
       });
       
       const sanitized = result.map(q => ({
@@ -155,7 +155,7 @@ export default function AdminForge() {
       toast({ 
         variant: "destructive", 
         title: "Neural Pipeline Error", 
-        description: err.message || "Failed to parse document. Check instructions or format." 
+        description: err.message || "Extraction failed. Ensure Drive link is public or file is readable." 
       });
     } finally {
       setImporting(false);
@@ -164,7 +164,7 @@ export default function AdminForge() {
 
   const publishTest = async () => {
     if (!user || importedQuestions.length === 0) {
-      toast({ variant: "destructive", title: "Forge Empty", description: "No questions detected." });
+      toast({ variant: "destructive", title: "Forge Empty", description: "No questions detected in the staging bank." });
       return;
     }
     setIsPublishing(true);
@@ -189,11 +189,11 @@ export default function AdminForge() {
 
     try {
       await setDoc(doc(db, 'tests', testId), finalTest);
-      toast({ title: "Evaluation Live", description: "Sync Complete." });
+      toast({ title: "Evaluation Live", description: "Portal synchronized successfully." });
       setImportedQuestions([]);
       setTestConfig({ ...testConfig, title: '', answerKeyUrl: '' });
     } catch (e) {
-      toast({ variant: "destructive", title: "Sync Failed", description: "Database error." });
+      toast({ variant: "destructive", title: "Sync Failed", description: "Database communication error." });
     } finally {
       setIsPublishing(false);
     }
@@ -206,12 +206,12 @@ export default function AdminForge() {
           <div className="space-y-2">
             <h1 className="text-5xl font-headline font-black tracking-tighter neon-text text-primary">Evaluation Forge</h1>
             <p className="text-muted-foreground font-medium flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-primary" /> SYSTEM ADMINISTRATOR • Matrix Control
+              <Cpu className="w-4 h-4 text-primary" /> SYSTEM ADMINISTRATOR • Matrix Command
             </p>
           </div>
           <Button onClick={publishTest} disabled={isPublishing || importedQuestions.length === 0} className="rounded-2xl h-16 px-10 font-black bg-primary text-black shadow-neon transition-all hover:scale-105 uppercase tracking-widest text-xs">
             {isPublishing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
-            Sync To Portal
+            Finalize & Sync
           </Button>
         </div>
 
@@ -220,7 +220,7 @@ export default function AdminForge() {
             <Card className="rounded-[3rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <Settings2 className="w-5 h-5 text-primary" /> Matrix Config
+                  <Settings2 className="w-5 h-5 text-primary" /> Matrix Configuration
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -284,7 +284,7 @@ export default function AdminForge() {
             <Card className="rounded-[3rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <BrainCircuit className="w-5 h-5 text-accent" /> Neural Source
+                  <BrainCircuit className="w-5 h-5 text-accent" /> Neural Extraction
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -308,11 +308,11 @@ export default function AdminForge() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Drive / Source URL</Label>
+                  <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Question Paper Drive URL</Label>
                   <div className="relative">
                     <Link2 className="absolute left-4 top-4.5 h-4 w-4 text-muted-foreground" />
                     <input 
-                      placeholder="Paste Drive link for AI reference..." 
+                      placeholder="Paste public Drive link for AI..." 
                       className="flex h-14 w-full rounded-2xl border border-input bg-muted/10 pl-12 pr-5 text-sm font-medium" 
                       value={sourceUrl} 
                       onChange={e => setSourceUrl(e.target.value)} 
@@ -323,7 +323,7 @@ export default function AdminForge() {
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Neural Instructions</Label>
                    <Textarea 
-                     placeholder="E.g. Focus on Physics section only..." 
+                     placeholder="E.g. Focus on Physics section. Detect answer key from page 5." 
                      className="rounded-xl h-24 bg-muted/10 border-accent/20 text-xs"
                      value={adminInstructions}
                      onChange={e => setAdminInstructions(e.target.value)}
@@ -359,7 +359,7 @@ export default function AdminForge() {
                       {editingId === q.id ? (
                         <div className="p-10 space-y-8">
                            <div className="space-y-3">
-                              <Label className="text-[10px] font-black uppercase text-primary">Edit Question</Label>
+                              <Label className="text-[10px] font-black uppercase text-primary">Edit Question Body</Label>
                               <Textarea className="rounded-2xl bg-muted/40 font-medium text-lg min-h-[150px]" defaultValue={q.questionText} onBlur={(e) => {
                                 const updated = { ...q, questionText: e.target.value };
                                 setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
@@ -379,7 +379,7 @@ export default function AdminForge() {
                            </div>
                            <div className="flex items-center justify-between gap-6 pt-6">
                              <div className="flex-1 space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-primary">Correct Selection</Label>
+                                <Label className="text-[10px] font-black uppercase text-primary">Mark Correct Answer</Label>
                                 <Select value={q.correctAnswer} onValueChange={v => {
                                   setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, correctAnswer: v } : item));
                                 }}>
