@@ -2,17 +2,7 @@
 
 A professional academic testing platform built with Next.js, Firebase, and Genkit AI.
 
-## 🚀 Deployment Instructions
 
-### 1. Link to GitHub
-Run these commands in your terminal to push your code:
-```bash
-git init
-git add .
-git commit -m "Initial commit: OneCrack Test Portal"
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-git push -u origin main
-```
 
 ### 2. Environment Variables (Netlify/Firebase)
 In your dashboard, add the following keys to enable AI and Emails securely:
