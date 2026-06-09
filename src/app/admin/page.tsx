@@ -28,7 +28,9 @@ import {
   FileSearch,
   Activity,
   Link2,
-  Save
+  Save,
+  Cpu,
+  ShieldCheck
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -36,7 +38,7 @@ import { Question, ClassLevel, Test, QuestionType, Subject, ExamStream } from '@
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 
-export default function AdminDashboard() {
+export default function AdminForge() {
   const { toast } = useToast();
   const { user } = useUser();
   const db = useFirestore();
@@ -47,7 +49,7 @@ export default function AdminDashboard() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Extract all questions. Generate 4-digit forensic codes for every option. Identify subject per question.');
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Identify subject per question. Generate 4-digit forensic codes.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -82,7 +84,7 @@ export default function AdminDashboard() {
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      toast({ variant: "destructive", title: "File too large", description: "Source documents must be under 10MB." });
+      toast({ variant: "destructive", title: "File Limit Exceeded", description: "Source documents must be under 10MB." });
       return;
     }
 
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
 
   const addManualQuestion = () => {
     if (!manualQ.questionText || !manualQ.correctAnswer) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Content and solution are required." });
+      toast({ variant: "destructive", title: "Validation Failed", description: "Question content and valid answer required." });
       return;
     }
     const newQ: Question = {
@@ -122,12 +124,12 @@ export default function AdminDashboard() {
     };
     setImportedQuestions(prev => [...prev, newQ]);
     setManualQ({ ...manualQ, questionText: '', correctAnswer: '', explanation: '', options: ['', '', '', ''] });
-    toast({ title: "Entry Verified", description: "Question added to staging bank with forensic codes." });
+    toast({ title: "Matrix Updated", description: "Manual item injected into staging bank." });
   };
 
   const runAIImport = async () => {
     if (!sourceFiles.questions.dataUri) {
-      toast({ variant: "destructive", title: "Source Missing", description: "Upload a question document to proceed." });
+      toast({ variant: "destructive", title: "Source Missing", description: "Upload a document to initialize extraction." });
       return;
     }
     setImporting(true);
@@ -138,24 +140,19 @@ export default function AdminDashboard() {
         adminInstructions: `Stream: ${testConfig.examStream}, Class: ${testConfig.classLevel}. ${adminInstructions}`
       });
       
-      if (!Array.isArray(result)) {
-        throw new Error("Invalid response format from AI engine.");
-      }
-
-      // Ensure every question has 4 unique codes
       const sanitized = result.map(q => ({
         ...q,
         optionCodes: q.optionCodes && q.optionCodes.length === 4 ? q.optionCodes : generateOptionCodes()
       }));
 
       setImportedQuestions(prev => [...prev, ...sanitized]);
-      toast({ title: "Neural Extraction Complete", description: `Successfully analyzed ${result.length} items.` });
+      toast({ title: "Neural Extraction Success", description: `Indexed ${result.length} questions from source.` });
     } catch (err: any) {
       console.error(err);
       toast({ 
         variant: "destructive", 
-        title: "AI Extraction Error", 
-        description: "The AI engine encountered an error parsing this document." 
+        title: "AI Pipeline Error", 
+        description: "Document structure too complex. Use Bulk CSV or Manual mode." 
       });
     } finally {
       setImporting(false);
@@ -168,8 +165,8 @@ export default function AdminDashboard() {
     const testId = uuidv4();
     const finalTest: Test = {
       id: testId,
-      title: testConfig.title || "Elite Academic Evaluation",
-      description: `${testConfig.examStream} High-Integrity Test - Class ${testConfig.classLevel}`,
+      title: testConfig.title || "Portal Evaluation",
+      description: `${testConfig.examStream} Academic Audit - Class ${testConfig.classLevel}`,
       subject: testConfig.subject,
       examStream: testConfig.examStream,
       classLevel: testConfig.classLevel,
@@ -186,11 +183,11 @@ export default function AdminDashboard() {
 
     try {
       await setDoc(doc(db, 'tests', testId), finalTest);
-      toast({ title: "Portal Synchronized", description: "Evaluation is now live." });
+      toast({ title: "Evaluation Live", description: "Matrix synchronized to candidate portals." });
       setImportedQuestions([]);
       setTestConfig({ ...testConfig, title: '', answerKeyUrl: '' });
     } catch (e) {
-      toast({ variant: "destructive", title: "Sync Failure", description: "Database transaction failed." });
+      toast({ variant: "destructive", title: "Sync Failed", description: "Core database transaction rejected." });
     } finally {
       setIsPublishing(false);
     }
@@ -203,40 +200,40 @@ export default function AdminDashboard() {
           <div className="space-y-2">
             <h1 className="text-5xl font-headline font-black tracking-tighter neon-text text-primary">Evaluation Forge</h1>
             <p className="text-muted-foreground font-medium flex items-center gap-2">
-              <Database className="w-4 h-4 text-primary" /> High-precision academic portal management
+              <Cpu className="w-4 h-4 text-primary" /> Professional Matrix Sourcing & Synchronization
             </p>
           </div>
-          <Button onClick={publishTest} disabled={isPublishing || importedQuestions.length === 0} className="rounded-2xl h-16 px-10 font-black bg-primary text-black shadow-neon transition-transform active:scale-95 uppercase tracking-widest text-xs">
-            {isPublishing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Plus className="w-5 h-5 mr-2" />}
-            Finalize Evaluation
+          <Button onClick={publishTest} disabled={isPublishing || importedQuestions.length === 0} className="rounded-2xl h-16 px-10 font-black bg-primary text-black shadow-neon transition-all hover:scale-105 uppercase tracking-widest text-xs">
+            {isPublishing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
+            Sync To Portal
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-4 space-y-8">
-            <Card className="rounded-[2.5rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl">
+            <Card className="rounded-[3rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <Settings2 className="w-5 h-5 text-primary" /> Matrix Configuration
+                  <Settings2 className="w-5 h-5 text-primary" /> Matrix Config
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Title</Label>
-                  <input placeholder="E.g. Phase 01 Evaluation" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Identifier</Label>
+                  <input placeholder="E.g. Unit 04 Assessment" className="flex h-14 w-full rounded-2xl border border-input bg-muted/20 px-5 text-sm font-bold" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Answer Key URL</Label>
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Official Answer Key (URL)</Label>
                   <div className="relative">
-                    <Link2 className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                    <input placeholder="Link to solution PDF" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 pl-10 pr-4 py-2 text-sm" value={testConfig.answerKeyUrl} onChange={e => setTestConfig({...testConfig, answerKeyUrl: e.target.value})} />
+                    <Link2 className="absolute left-4 top-4.5 h-4 w-4 text-muted-foreground" />
+                    <input placeholder="https://drive.google.com/..." className="flex h-14 w-full rounded-2xl border border-input bg-muted/20 pl-12 pr-5 text-sm font-medium" value={testConfig.answerKeyUrl} onChange={e => setTestConfig({...testConfig, answerKeyUrl: e.target.value})} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Exam Stream</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Stream</Label>
                     <Select value={testConfig.examStream} onValueChange={v => setTestConfig({...testConfig, examStream: v as ExamStream})}>
-                      <SelectTrigger className="rounded-xl h-12 bg-muted/20">
+                      <SelectTrigger className="rounded-2xl h-14 bg-muted/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -247,9 +244,9 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Target Class</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Class</Label>
                     <Select value={testConfig.classLevel} onValueChange={v => setTestConfig({...testConfig, classLevel: v as ClassLevel})}>
-                      <SelectTrigger className="rounded-xl h-12 bg-muted/20">
+                      <SelectTrigger className="rounded-2xl h-14 bg-muted/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -263,49 +260,49 @@ export default function AdminDashboard() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2 text-center">
-                    <Label className="text-[9px] font-black text-primary">VALID (+)</Label>
-                    <input type="number" className="flex h-12 w-full rounded-xl border border-primary/20 bg-muted/20 text-center font-bold" value={testConfig.marks} onChange={e => setTestConfig({...testConfig, marks: parseInt(e.target.value) || 0})} />
+                    <Label className="text-[9px] font-black text-primary">VALID</Label>
+                    <input type="number" className="flex h-14 w-full rounded-2xl border border-primary/20 bg-muted/20 text-center font-black" value={testConfig.marks} onChange={e => setTestConfig({...testConfig, marks: parseInt(e.target.value) || 0})} />
                   </div>
                   <div className="space-y-2 text-center">
-                    <Label className="text-[9px] font-black text-destructive">FAIL (-)</Label>
-                    <input type="number" className="flex h-12 w-full rounded-xl border border-destructive/20 bg-muted/20 text-center font-bold" value={testConfig.neg} onChange={e => setTestConfig({...testConfig, neg: parseInt(e.target.value) || 0})} />
+                    <Label className="text-[9px] font-black text-destructive">FAIL</Label>
+                    <input type="number" className="flex h-14 w-full rounded-2xl border border-destructive/20 bg-muted/20 text-center font-black" value={testConfig.neg} onChange={e => setTestConfig({...testConfig, neg: parseInt(e.target.value) || 0})} />
                   </div>
                   <div className="space-y-2 text-center">
                     <Label className="text-[9px] font-black text-muted-foreground">SKIP</Label>
-                    <input type="number" className="flex h-12 w-full rounded-xl border border-white/5 bg-muted/20 text-center font-bold" value={testConfig.skip} onChange={e => setTestConfig({...testConfig, skip: parseInt(e.target.value) || 0})} />
+                    <input type="number" className="flex h-14 w-full rounded-2xl border border-white/5 bg-muted/20 text-center font-black" value={testConfig.skip} onChange={e => setTestConfig({...testConfig, skip: parseInt(e.target.value) || 0})} />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2.5rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden">
+            <Card className="rounded-[3rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <BrainCircuit className="w-5 h-5 text-accent" /> AI Neural Forge
+                  <BrainCircuit className="w-5 h-5 text-accent" /> Neural Source
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Source PDF/Doc</Label>
+                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Document Source</Label>
                     {sourceFiles.questions.file && (
                       <button onClick={removeFile} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
-                        <FileX className="w-3 h-3" /> REMOVE
+                        <FileX className="w-3 h-3" /> CLEAR
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <Input ref={qInputRef} type="file" onChange={handleFileChange} accept=".pdf,.docx" className="rounded-xl h-12 bg-muted/20 border-dashed border-accent/30" />
-                    {sourceFiles.questions.file && <div className="absolute inset-0 bg-background rounded-xl flex items-center px-4 gap-3 border border-accent/40">
-                      <FileText className="w-5 h-5 text-accent" />
-                      <span className="text-xs font-bold truncate flex-1">{sourceFiles.questions.file.name}</span>
-                      <CheckCircle2 className="w-4 h-4 text-accent" />
+                    <Input ref={qInputRef} type="file" onChange={handleFileChange} accept=".pdf,.docx" className="rounded-2xl h-14 bg-muted/20 border-dashed border-accent/30" />
+                    {sourceFiles.questions.file && <div className="absolute inset-0 bg-background rounded-2xl flex items-center px-5 gap-3 border border-accent/40 shadow-inner">
+                      <FileText className="w-6 h-6 text-accent" />
+                      <span className="text-xs font-black truncate flex-1">{sourceFiles.questions.file.name}</span>
+                      <CheckCircle2 className="w-5 h-5 text-accent" />
                     </div>}
                   </div>
                 </div>
-                <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-14 rounded-2xl font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
+                <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-16 rounded-[2rem] font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Wand2 className="w-5 h-5 mr-3" />}
-                  Initialize Extraction
+                  Run Neural Extraction
                 </Button>
               </CardContent>
             </Card>
@@ -314,124 +311,141 @@ export default function AdminDashboard() {
           <div className="lg:col-span-8 space-y-8">
             <Tabs defaultValue="bank" className="w-full">
               <div className="flex items-center justify-between mb-8">
-                <TabsList className="bg-card/40 p-1 rounded-2xl border border-border">
-                  <TabsTrigger value="bank" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Staging Bank</TabsTrigger>
-                  <TabsTrigger value="manual" className="rounded-xl px-10 h-11 font-black uppercase tracking-widest text-[10px]">Manual Entry</TabsTrigger>
+                <TabsList className="bg-card/40 p-1.5 rounded-[2rem] border border-border">
+                  <TabsTrigger value="bank" className="rounded-[1.5rem] px-12 h-12 font-black uppercase tracking-widest text-[10px]">Staging Bank</TabsTrigger>
+                  <TabsTrigger value="manual" className="rounded-[1.5rem] px-12 h-12 font-black uppercase tracking-widest text-[10px]">Manual Entry</TabsTrigger>
                 </TabsList>
                 {importedQuestions.length > 0 && (
-                  <div className="px-6 py-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
-                    <Activity className="w-4 h-4 text-primary animate-pulse" />
-                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">{importedQuestions.length} Items Indexed</span>
+                  <div className="px-8 py-3 rounded-[1.5rem] bg-primary/10 border border-primary/20 flex items-center gap-4">
+                    <Activity className="w-5 h-5 text-primary animate-pulse" />
+                    <span className="text-xs font-black text-primary uppercase tracking-widest">{importedQuestions.length} Items Indexed</span>
                   </div>
                 )}
               </div>
 
-              <TabsContent value="bank" className="space-y-5">
-                <div className="max-h-[1000px] overflow-y-auto space-y-5 pr-2 custom-scrollbar">
+              <TabsContent value="bank" className="space-y-6">
+                <div className="max-h-[1200px] overflow-y-auto space-y-6 pr-3 custom-scrollbar">
                   {importedQuestions.map((q, idx) => (
-                    <Card key={q.id} className="rounded-[2rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden">
+                    <Card key={q.id} className="rounded-[3rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden shadow-xl">
                       {editingId === q.id ? (
-                        <div className="p-8 space-y-6">
-                           <Textarea className="rounded-xl bg-muted/30" defaultValue={q.questionText} onBlur={(e) => {
-                             const updated = { ...q, questionText: e.target.value };
-                             setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
-                           }} />
-                           <div className="grid grid-cols-2 gap-4">
+                        <div className="p-10 space-y-8">
+                           <div className="space-y-3">
+                              <Label className="text-[10px] font-black uppercase text-primary">Question Body</Label>
+                              <Textarea className="rounded-2xl bg-muted/40 font-medium text-lg min-h-[150px]" defaultValue={q.questionText} onBlur={(e) => {
+                                const updated = { ...q, questionText: e.target.value };
+                                setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
+                              }} />
+                           </div>
+                           <div className="grid grid-cols-2 gap-6">
                               {q.options?.map((opt, i) => (
-                                <Input key={i} className="rounded-xl bg-muted/30" defaultValue={opt} onBlur={(e) => {
-                                  const newOpts = [...(q.options || [])];
-                                  newOpts[i] = e.target.value;
-                                  setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, options: newOpts } : item));
-                                }} />
+                                <div key={i} className="space-y-2">
+                                  <Label className="text-[9px] font-black uppercase text-muted-foreground">Option {String.fromCharCode(65+i)}</Label>
+                                  <Input className="rounded-xl h-12 bg-muted/40 font-bold" defaultValue={opt} onBlur={(e) => {
+                                    const newOpts = [...(q.options || [])];
+                                    newOpts[i] = e.target.value;
+                                    setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, options: newOpts } : item));
+                                  }} />
+                                </div>
                               ))}
                            </div>
-                           <div className="space-y-2">
-                              <Label className="text-[10px] font-black uppercase text-primary">Correct Answer</Label>
-                              <Select value={q.correctAnswer} onValueChange={v => {
-                                setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, correctAnswer: v } : item));
-                              }}>
-                                <SelectTrigger className="rounded-xl h-10 bg-muted/30">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {q.options?.map((opt, i) => (
-                                    <SelectItem key={i} value={opt}>{opt}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                           <div className="flex items-center justify-between gap-6 pt-6">
+                             <div className="flex-1 space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-primary">Correct Selection</Label>
+                                <Select value={q.correctAnswer} onValueChange={v => {
+                                  setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, correctAnswer: v } : item));
+                                }}>
+                                  <SelectTrigger className="rounded-xl h-12 bg-muted/40">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {q.options?.map((opt, i) => (
+                                      <SelectItem key={i} value={opt}>Option {String.fromCharCode(65 + i)}: {opt}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                             </div>
+                             <Button size="lg" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-black px-10 h-12">
+                               <Save className="w-5 h-5 mr-3" /> Save Item
+                             </Button>
                            </div>
-                           <Button size="sm" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-bold">
-                             <Save className="w-4 h-4 mr-2" /> Save Changes
-                           </Button>
                         </div>
                       ) : (
-                        <div className="p-8 flex items-start gap-8">
-                          <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-white/5 flex items-center justify-center font-black text-xl shrink-0 text-primary">
+                        <div className="p-10 flex items-start gap-10">
+                          <div className="w-16 h-16 rounded-[1.5rem] bg-muted/30 border border-white/5 flex items-center justify-center font-black text-2xl shrink-0 text-primary shadow-inner">
                             {(idx + 1).toString().padStart(2, '0')}
                           </div>
-                          <div className="flex-1 space-y-4">
-                            <h4 className="font-bold text-xl leading-snug text-white/90">{q.questionText}</h4>
-                            <div className="grid grid-cols-2 gap-3">
+                          <div className="flex-1 space-y-6">
+                            <h4 className="font-headline font-black text-2xl leading-snug text-white/95">{q.questionText}</h4>
+                            <div className="grid grid-cols-2 gap-4">
                               {q.options?.map((opt, i) => (
-                                <div key={i} className={`p-4 rounded-xl border text-sm font-bold flex items-center gap-3 ${opt === q.correctAnswer ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-muted/10 border-white/5 text-muted-foreground'}`}>
-                                  <span className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-[10px]">{String.fromCharCode(65 + i)}</span>
+                                <div key={i} className={cn(
+                                  "p-5 rounded-2xl border-2 text-sm font-bold flex items-center gap-4 transition-all",
+                                  opt === q.correctAnswer ? "bg-primary/10 border-primary/40 text-primary" : "bg-white/2 border-white/5 text-muted-foreground/50"
+                                )}>
+                                  <span className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-[10px] font-black">{String.fromCharCode(65 + i)}</span>
                                   <div className="flex-1 truncate">{opt}</div>
                                   <span className="text-[9px] opacity-40 font-mono">[{q.optionCodes?.[i]}]</span>
                                 </div>
                               ))}
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2">
-                             <Button variant="ghost" size="icon" className="text-primary" onClick={() => setEditingId(q.id)}><Edit3 className="w-5 h-5" /></Button>
-                             <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setImportedQuestions(prev => prev.filter(item => item.id !== q.id))}><Trash2 className="w-5 h-5" /></Button>
+                          <div className="flex flex-col gap-3">
+                             <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-primary hover:bg-primary/10" onClick={() => setEditingId(q.id)}><Edit3 className="w-6 h-6" /></Button>
+                             <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => setImportedQuestions(prev => prev.filter(item => item.id !== q.id))}><Trash2 className="w-6 h-6" /></Button>
                           </div>
                         </div>
                       )}
                     </Card>
                   ))}
                   {importedQuestions.length === 0 && (
-                    <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground opacity-40">
-                      <FileSearch className="w-20 h-20 mx-auto mb-6" />
-                      <p className="font-black uppercase tracking-widest text-sm">Staging Bank Is Idle</p>
+                    <div className="py-60 text-center border-4 border-dashed rounded-[4rem] border-white/5 text-muted-foreground opacity-30">
+                      <FileSearch className="w-24 h-24 mx-auto mb-8" />
+                      <p className="font-black uppercase tracking-widest text-lg">Staging Bank Awaiting Input</p>
                     </div>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="manual" className="space-y-6">
-                <Card className="rounded-[3rem] border-border bg-card/40 p-12">
-                  <div className="space-y-8">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Content</Label>
+              <TabsContent value="manual" className="space-y-8">
+                <Card className="rounded-[4rem] border-border bg-card/40 p-16 shadow-3xl">
+                  <div className="space-y-10">
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Body</Label>
                       <Textarea 
-                        placeholder="Type question text..." 
-                        className="rounded-2xl min-h-[150px] bg-muted/20 text-lg font-medium border-primary/20" 
+                        placeholder="Type or paste question text here..." 
+                        className="rounded-3xl min-h-[200px] bg-muted/20 text-xl font-medium border-primary/20 p-8" 
                         value={manualQ.questionText}
                         onChange={e => setManualQ({...manualQ, questionText: e.target.value})}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-8">
                       {(manualQ.options || ['', '', '', '']).map((opt, i) => (
-                        <Input key={i} placeholder={`Option ${String.fromCharCode(65 + i)}`} className="rounded-xl h-12 bg-muted/20" value={opt} onChange={e => {
-                          const newOpts = [...(manualQ.options || ['', '', '', ''])];
-                          newOpts[i] = e.target.value;
-                          setManualQ({...manualQ, options: newOpts});
-                        }} />
+                        <div key={i} className="space-y-3">
+                          <Label className="text-[9px] font-black text-muted-foreground uppercase">Option {String.fromCharCode(65 + i)}</Label>
+                          <Input placeholder={`Value for ${String.fromCharCode(65 + i)}`} className="rounded-2xl h-14 bg-muted/20 border-white/10 font-bold" value={opt} onChange={e => {
+                            const newOpts = [...(manualQ.options || ['', '', '', ''])];
+                            newOpts[i] = e.target.value;
+                            setManualQ({...manualQ, options: newOpts});
+                          }} />
+                        </div>
                       ))}
                     </div>
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Select Correct Answer</Label>
-                       <RadioGroup value={manualQ.correctAnswer} onValueChange={v => setManualQ({...manualQ, correctAnswer: v})} className="grid grid-cols-4 gap-4">
+                    <div className="space-y-4 pt-6">
+                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Select Valid Answer</Label>
+                       <RadioGroup value={manualQ.correctAnswer} onValueChange={v => setManualQ({...manualQ, correctAnswer: v})} className="grid grid-cols-4 gap-6">
                           {(manualQ.options || []).map((opt, i) => (
-                            <div key={i} className="flex items-center space-x-2">
-                              <RadioGroupItem value={opt} id={`r${i}`} />
-                              <Label htmlFor={`r${i}`} className="text-xs uppercase font-bold">{String.fromCharCode(65+i)}</Label>
-                            </div>
+                            <Label key={i} className={cn(
+                              "flex items-center justify-center gap-3 p-5 rounded-2xl border-2 transition-all cursor-pointer font-black uppercase tracking-widest text-[10px]",
+                              manualQ.correctAnswer === opt ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-muted-foreground"
+                            )}>
+                              <RadioGroupItem value={opt} className="sr-only" />
+                              {String.fromCharCode(65 + i)} {manualQ.correctAnswer === opt && <CheckCircle2 className="w-4 h-4" />}
+                            </Label>
                           ))}
                        </RadioGroup>
                     </div>
-                    <Button onClick={addManualQuestion} className="w-full h-16 rounded-2xl font-black bg-primary text-black uppercase tracking-widest text-xs">
-                      Insert Into Bank
+                    <Button onClick={addManualQuestion} className="w-full h-20 rounded-[2.5rem] font-black bg-primary text-black uppercase tracking-[0.3em] text-sm hover:scale-[1.02] transition-transform shadow-neon">
+                      Incorporate Into Bank
                     </Button>
                   </div>
                 </Card>

@@ -55,8 +55,9 @@ STRICT JSON PROTOCOL:
 1. Identify every question and its 4 options.
 2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 1022). These MUST be unique across the entire document.
 3. Determine the subject (Physics, Chemistry, Biology, Mathematics) for each question based on context.
-4. Use LaTeX for formulas.
-5. Identify the correct answer exactly as it appears in the options.`,
+4. Use LaTeX for formulas where appropriate.
+5. Identify the correct answer exactly as it appears in the options.
+6. If the document is an answer key, extract the mappings.`,
   prompt: `TASK: Extract all academic questions from the provided source.
 
 SOURCE: {{media url=fileDataUri}}

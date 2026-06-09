@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { KeyRound, User as UserIcon, Loader2, Eye, EyeOff } from 'lucide-react';
 import { APP_CONFIG } from '@/lib/config';
 
@@ -60,7 +60,7 @@ export default function LoginPage() {
             return;
           } catch (createErr) {
             console.error("Admin Setup Failed:", createErr);
-            setError('Admin verification failed. Contact system root.');
+            setError('System verification failed. Root access denied.');
             setLoading(false);
             return;
           }
@@ -78,9 +78,9 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: any) {
       console.error(err);
-      let message = 'Verification failed. Check your ID and passcode.';
+      let message = 'Identification failed. Verify UID and passcode.';
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        message = 'Invalid credentials. If you just registered, please double-check your UID.';
+        message = 'Invalid credentials. Ensure your UID is correctly entered.';
       }
       setError(message);
       setLoading(false);
@@ -88,22 +88,22 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout title="OneCrack Access" subtitle="Secure portal for evaluations">
+    <AuthLayout title="OneCrack Command" subtitle="Authenticated portal access exclusively">
       <form onSubmit={handleLogin} className="space-y-6">
         {error && (
-          <Alert variant="destructive" className="rounded-xl">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="rounded-2xl border-destructive/50 bg-destructive/10">
+            <AlertDescription className="font-bold text-xs uppercase tracking-widest">{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Login ID (UID or Email)</Label>
+            <Label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary">Identity UID</Label>
             <div className="relative">
-              <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <UserIcon className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Enter your unique ID"
-                className="pl-10 h-11 bg-muted/50 border-border rounded-xl font-medium"
+                placeholder="Ex: user_99"
+                className="pl-12 h-14 bg-muted/20 border-border rounded-2xl font-bold font-mono"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
@@ -112,40 +112,37 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Passcode</Label>
-              <Link href="#" className="text-[10px] text-primary font-bold hover:underline opacity-50">FORGOT?</Link>
-            </div>
+            <Label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary">Secure Passcode</Label>
             <div className="relative">
-              <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <KeyRound className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type={showPass ? "text" : "password"}
                 placeholder="••••••"
-                className="pl-10 pr-10 h-11 bg-muted/50 border-border rounded-xl font-mono"
+                className="pl-12 pr-12 h-14 bg-muted/20 border-border rounded-2xl font-mono"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 required
               />
               <button 
                 type="button" 
-                className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors"
+                className="absolute right-4 top-3.5 text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setShowPass(!showPass)}
               >
-                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-12 text-lg font-bold rounded-xl shadow-xl shadow-primary/10" disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? 'Verifying Identity...' : 'Sign In'}
+        <Button type="submit" className="w-full h-16 text-sm font-black uppercase tracking-[0.3em] rounded-2xl bg-primary text-black shadow-neon transition-all hover:scale-[1.02]" disabled={loading}>
+          {loading ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : null}
+          {loading ? 'AUTHENTICATING...' : 'ACCESS PORTAL'}
         </Button>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Not registered?{' '}
-          <Link href="/auth/register" className="text-primary font-bold hover:underline">
-            Register Unique ID
+        <p className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+          NOT REGISTERED?{' '}
+          <Link href="/auth/register" className="text-primary hover:underline">
+            ESTABLISH IDENTITY
           </Link>
         </p>
       </form>
