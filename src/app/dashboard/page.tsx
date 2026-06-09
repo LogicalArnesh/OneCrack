@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Zap,
   Cpu,
-  Database
+  Database,
+  Wifi
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -60,7 +61,7 @@ export default function Dashboard() {
             <div className="space-y-4 relative z-10">
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="px-4 py-1.5 rounded-xl border-primary/40 bg-primary/5 text-primary text-[10px] font-black tracking-widest uppercase">
-                  SYSTEM ACTIVE • {isAdmin ? 'SYSTEM ADMINISTRATOR' : `CLASS ${userProfile?.classLevel || 'AUTH'}`}
+                  {isAdmin ? 'SYSTEM ADMINISTRATOR' : `CLASS ${userProfile?.classLevel || 'AUTH'}`} • ACTIVE
                 </Badge>
                 <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   <div className="flex items-end gap-1 h-3">
@@ -73,12 +74,12 @@ export default function Dashboard() {
               <h1 className="text-6xl font-headline font-black text-white tracking-tighter neon-text leading-none">
                 {userProfile?.name?.split(' ')[0] || 'Member'} <span className="text-primary font-headline">Portal</span>
               </h1>
-              <p className="text-muted-foreground font-medium text-lg max-w-sm">Evaluations are live. Integrity monitoring is active across all channels.</p>
+              <p className="text-muted-foreground font-medium text-lg max-w-sm">Evaluations are live. Integrity monitoring is active across all sectors.</p>
             </div>
             <div className="relative z-10 bg-black/40 backdrop-blur-3xl px-8 py-6 rounded-[2.5rem] border border-white/10 shadow-2xl">
                <div className="flex items-center gap-3 mb-1">
-                 <Clock className="w-5 h-5 text-primary" />
-                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Neural Time Sync</p>
+                 <Wifi className="w-5 h-5 text-primary animate-pulse" />
+                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">NEURAL TIME SYNC</p>
                </div>
                <p className="text-4xl font-mono font-black text-white tracking-widest">{currentTime || '--:--:--'}</p>
             </div>
@@ -89,8 +90,8 @@ export default function Dashboard() {
               <Card className="flex-1 rounded-[3rem] bg-primary/10 border-primary/30 flex flex-col items-center justify-center p-8 text-center group cursor-pointer hover:bg-primary/20 transition-all border-dashed" asChild>
                 <Link href="/admin">
                   <Zap className="w-12 h-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
-                  <p className="text-xs font-black text-primary uppercase tracking-widest">Create New</p>
-                  <p className="text-xl font-headline font-black text-white">Test Forge</p>
+                  <p className="text-xs font-black text-primary uppercase tracking-widest">Evaluation</p>
+                  <p className="text-xl font-headline font-black text-white">FORGE MODE</p>
                 </Link>
               </Card>
             </div>
@@ -117,7 +118,7 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest px-3">
-                      {test.subject}
+                      {test.examStream} • {test.subject}
                     </Badge>
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                        <Clock className="w-3 h-3" /> {test.totalTimeMinutes}M

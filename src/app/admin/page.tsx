@@ -50,7 +50,7 @@ export default function AdminForge() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Identify subject per question. Use forensic codes.');
+  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Use forensic codes.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -153,7 +153,7 @@ export default function AdminForge() {
       toast({ 
         variant: "destructive", 
         title: "Neural Pipeline Error", 
-        description: err.message || "Failed to parse document. Try splitting the PDF into smaller sections." 
+        description: err.message || "Failed to parse document." 
       });
     } finally {
       setImporting(false);
@@ -162,7 +162,7 @@ export default function AdminForge() {
 
   const publishTest = async () => {
     if (!user || importedQuestions.length === 0) {
-      toast({ variant: "destructive", title: "Forge Empty", description: "No questions detected in the staging bank." });
+      toast({ variant: "destructive", title: "Forge Empty", description: "No questions detected." });
       return;
     }
     setIsPublishing(true);
@@ -187,11 +187,11 @@ export default function AdminForge() {
 
     try {
       await setDoc(doc(db, 'tests', testId), finalTest);
-      toast({ title: "Evaluation Live", description: "Matrix synchronized to candidate portals." });
+      toast({ title: "Evaluation Live", description: "Sync Complete." });
       setImportedQuestions([]);
       setTestConfig({ ...testConfig, title: '', answerKeyUrl: '' });
     } catch (e) {
-      toast({ variant: "destructive", title: "Sync Failed", description: "Core database transaction rejected." });
+      toast({ variant: "destructive", title: "Sync Failed", description: "Database error." });
     } finally {
       setIsPublishing(false);
     }
@@ -204,7 +204,7 @@ export default function AdminForge() {
           <div className="space-y-2">
             <h1 className="text-5xl font-headline font-black tracking-tighter neon-text text-primary">Evaluation Forge</h1>
             <p className="text-muted-foreground font-medium flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-primary" /> Professional Matrix Sourcing & Synchronization
+              <Cpu className="w-4 h-4 text-primary" /> SYSTEM ADMINISTRATOR • Matrix Control
             </p>
           </div>
           <Button onClick={publishTest} disabled={isPublishing || importedQuestions.length === 0} className="rounded-2xl h-16 px-10 font-black bg-primary text-black shadow-neon transition-all hover:scale-105 uppercase tracking-widest text-xs">
@@ -224,10 +224,10 @@ export default function AdminForge() {
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Identifier</Label>
-                  <input placeholder="E.g. Unit 04 Assessment" className="flex h-14 w-full rounded-2xl border border-input bg-muted/20 px-5 text-sm font-bold" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
+                  <input placeholder="E.g. JEE Advanced Mock 01" className="flex h-14 w-full rounded-2xl border border-input bg-muted/20 px-5 text-sm font-bold" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Official Answer Key (URL)</Label>
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Answer Key Reference URL</Label>
                   <div className="relative">
                     <Link2 className="absolute left-4 top-4.5 h-4 w-4 text-muted-foreground" />
                     <input placeholder="https://drive.google.com/..." className="flex h-14 w-full rounded-2xl border border-input bg-muted/20 pl-12 pr-5 text-sm font-medium" value={testConfig.answerKeyUrl} onChange={e => setTestConfig({...testConfig, answerKeyUrl: e.target.value})} />
@@ -241,8 +241,8 @@ export default function AdminForge() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="JEE">JEE (PCM)</SelectItem>
-                        <SelectItem value="NEET">NEET (PCB)</SelectItem>
+                        <SelectItem value="JEE">JEE (Phy, Chem, Math)</SelectItem>
+                        <SelectItem value="NEET">NEET (Phy, Chem, Bio)</SelectItem>
                         <SelectItem value="General">General</SelectItem>
                       </SelectContent>
                     </Select>
@@ -288,7 +288,7 @@ export default function AdminForge() {
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Document Source</Label>
+                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Source Document (PDF)</Label>
                     {sourceFiles.questions.file && (
                       <button onClick={removeFile} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
                         <FileX className="w-3 h-3" /> CLEAR
@@ -307,7 +307,7 @@ export default function AdminForge() {
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Neural Instructions</Label>
                    <Textarea 
-                     placeholder="Customize AI extraction behavior..." 
+                     placeholder="E.g. Focus on Physics section only..." 
                      className="rounded-xl h-24 bg-muted/10 border-accent/20 text-xs"
                      value={adminInstructions}
                      onChange={e => setAdminInstructions(e.target.value)}
@@ -315,7 +315,7 @@ export default function AdminForge() {
                 </div>
                 <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-16 rounded-[2rem] font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Zap className="w-5 h-5 mr-3" />}
-                  {importing ? "Extracting..." : "Run Neural Extraction"}
+                  {importing ? "EXTRACTING..." : "RUN NEURAL EXTRACTION"}
                 </Button>
               </CardContent>
             </Card>
@@ -343,7 +343,7 @@ export default function AdminForge() {
                       {editingId === q.id ? (
                         <div className="p-10 space-y-8">
                            <div className="space-y-3">
-                              <Label className="text-[10px] font-black uppercase text-primary">Question Body</Label>
+                              <Label className="text-[10px] font-black uppercase text-primary">Edit Question</Label>
                               <Textarea className="rounded-2xl bg-muted/40 font-medium text-lg min-h-[150px]" defaultValue={q.questionText} onBlur={(e) => {
                                 const updated = { ...q, questionText: e.target.value };
                                 setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
@@ -413,7 +413,7 @@ export default function AdminForge() {
                   {importedQuestions.length === 0 && (
                     <div className="py-60 text-center border-4 border-dashed rounded-[4rem] border-white/5 text-muted-foreground opacity-30">
                       <FileSearch className="w-24 h-24 mx-auto mb-8" />
-                      <p className="font-black uppercase tracking-widest text-lg">Staging Bank Awaiting Input</p>
+                      <p className="font-black uppercase tracking-widest text-lg">Staging Bank Empty</p>
                     </div>
                   )}
                 </div>
@@ -425,7 +425,7 @@ export default function AdminForge() {
                     <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Body</Label>
                       <Textarea 
-                        placeholder="Type or paste question text here..." 
+                        placeholder="Type manual question here..." 
                         className="rounded-3xl min-h-[200px] bg-muted/20 text-xl font-medium border-primary/20 p-8" 
                         value={manualQ.questionText}
                         onChange={e => setManualQ({...manualQ, questionText: e.target.value})}
@@ -435,7 +435,7 @@ export default function AdminForge() {
                       {(manualQ.options || ['', '', '', '']).map((opt, i) => (
                         <div key={i} className="space-y-3">
                           <Label className="text-[9px] font-black text-muted-foreground uppercase">Option {String.fromCharCode(65 + i)}</Label>
-                          <Input placeholder={`Value for ${String.fromCharCode(65 + i)}`} className="rounded-2xl h-14 bg-muted/20 border-white/10 font-bold" value={opt} onChange={e => {
+                          <Input className="rounded-2xl h-14 bg-muted/20 border-white/10 font-bold" value={opt} onChange={e => {
                             const newOpts = [...(manualQ.options || ['', '', '', ''])];
                             newOpts[i] = e.target.value;
                             setManualQ({...manualQ, options: newOpts});
@@ -444,7 +444,7 @@ export default function AdminForge() {
                       ))}
                     </div>
                     <div className="space-y-4 pt-6">
-                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Select Valid Answer</Label>
+                       <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Mark Correct Answer</Label>
                        <RadioGroup value={manualQ.correctAnswer} onValueChange={v => setManualQ({...manualQ, correctAnswer: v})} className="grid grid-cols-4 gap-6">
                           {(manualQ.options || []).map((opt, i) => (
                             <Label key={i} className={cn(
