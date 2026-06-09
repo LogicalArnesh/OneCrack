@@ -47,12 +47,11 @@ export default function Dashboard() {
   const testsQuery = useMemoFirebase(() => query(collection(db, 'tests'), limit(10)), [db]);
   const { data: featuredTests } = useCollection<Test>(testsQuery);
 
-  const isAdmin = userProfile?.isAdmin || userProfile?.loginUid === 'admin';
+  const isAdmin = userProfile?.isAdmin || userProfile?.loginUid === 'admin' || user?.email?.includes('admin');
 
   return (
     <PortalLayout>
       <div className="space-y-12 pb-24 max-w-7xl mx-auto">
-        {/* Simplified Status Hero */}
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 flex flex-col md:flex-row md:items-end justify-between gap-8 bg-card/20 p-10 rounded-[3rem] border border-border shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-1000">
@@ -64,15 +63,15 @@ export default function Dashboard() {
                   {isAdmin ? 'SYSTEM ADMINISTRATOR' : 'ACTIVE CANDIDATE'} • ONLINE
                 </Badge>
                 <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  <div className="flex items-end gap-1 h-3">
-                     <div className="w-1 bg-primary rounded-t-sm animate-signal h-1.5" />
-                     <div className="w-1 bg-primary rounded-t-sm animate-signal-delayed h-2.5" />
-                     <div className="w-1 bg-primary rounded-t-sm animate-signal-more-delayed h-3.5" />
+                  <div className="flex items-end gap-1.5 h-4">
+                     <div className="w-1.5 bg-primary rounded-t-sm animate-signal h-2" />
+                     <div className="w-1.5 bg-primary rounded-t-sm animate-signal-delayed h-3" />
+                     <div className="w-1.5 bg-primary rounded-t-sm animate-signal-more-delayed h-4" />
                   </div> PORTAL SYNCED
                 </div>
               </div>
               <h1 className="text-6xl font-headline font-black text-white tracking-tighter neon-text leading-none">
-                {userProfile?.name?.split(' ')[0] || 'Member'} <span className="text-primary font-headline">Sector</span>
+                {isAdmin ? 'ADMIN' : (userProfile?.name?.split(' ')[0] || 'Member')} <span className="text-primary font-headline">Sector</span>
               </h1>
               <p className="text-muted-foreground font-medium text-lg max-w-sm">Evaluations are live. Integrity monitoring is active across all sectors.</p>
             </div>
@@ -99,7 +98,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Evaluation Queue */}
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

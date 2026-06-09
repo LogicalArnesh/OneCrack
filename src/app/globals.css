@@ -69,21 +69,37 @@
 
 /* Lingering Moving Neon Signal Animation */
 @keyframes signal-scan {
-  0% { transform: scaleY(0.4); opacity: 0.3; filter: hue-rotate(0deg); }
-  50% { transform: scaleY(1.4); opacity: 1; filter: brightness(1.5) hue-rotate(20deg); }
-  100% { transform: scaleY(0.4); opacity: 0.3; filter: hue-rotate(0deg); }
+  0% { 
+    transform: scaleY(0.5); 
+    opacity: 0.3; 
+    filter: brightness(1); 
+  }
+  50% { 
+    transform: scaleY(1.3); 
+    opacity: 1; 
+    filter: brightness(1.8) drop-shadow(0 0 8px hsl(var(--primary))); 
+  }
+  100% { 
+    transform: scaleY(0.5); 
+    opacity: 0.3; 
+    filter: brightness(1); 
+  }
 }
 
 .animate-signal {
-  animation: signal-scan 2.5s ease-in-out infinite;
+  animation: signal-scan 3s ease-in-out infinite;
 }
 
 .animate-signal-delayed {
-  animation: signal-scan 2.5s ease-in-out infinite;
-  animation-delay: 0.6s;
+  animation: signal-scan 3s ease-in-out infinite;
+  animation-delay: 0.8s;
 }
 
 .animate-signal-more-delayed {
-  animation: signal-scan 2.5s ease-in-out infinite;
-  animation-delay: 1.2s;
+  animation: signal-scan 3s ease-in-out infinite;
+  animation-delay: 1.6s;
+}
+
+.print-report {
+  font-family: 'Inter', sans-serif !important;
 }
