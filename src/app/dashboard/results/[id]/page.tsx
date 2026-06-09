@@ -21,8 +21,9 @@ import {
   Award,
   FileCode,
   Printer,
-  QrCode,
-  CheckCircle
+  FileText,
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 import {
   PieChart,
@@ -154,6 +155,13 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
           </div>
           
           <div className="flex items-center gap-6">
+            {test.answerKeyUrl && (
+              <Button asChild variant="outline" className="rounded-2xl h-14 px-8 font-black gap-3 border-accent/40 bg-accent/5 text-accent hover:bg-accent/10 uppercase tracking-widest text-[10px]">
+                <a href={test.answerKeyUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4" /> OFFICIAL KEY
+                </a>
+              </Button>
+            )}
             <Button onClick={handlePrint} variant="outline" className="rounded-2xl h-14 px-8 font-black gap-3 border-white/5 bg-muted/20 hover:bg-muted/30 uppercase tracking-widest text-[10px]">
               <Printer className="w-4 h-4" /> PRINT ANALYSIS
             </Button>

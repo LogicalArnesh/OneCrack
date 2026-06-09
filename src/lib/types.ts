@@ -43,7 +43,7 @@ export interface Test {
   skippedMarks: number;
   isReleased: boolean;
   adminId: string;
-  answerKeyUrl?: string;
+  answerKeyUrl?: string; // Link to the official solution/answer key
 }
 
 export interface Attempt {

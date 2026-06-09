@@ -23,19 +23,15 @@ import {
   CheckCircle2,
   FileText,
   Edit3,
-  Save,
-  X,
   BrainCircuit,
-  Terminal,
   FileSearch,
   Activity,
-  Cpu
+  Link2
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Question, ClassLevel, Test, QuestionType, Subject, ExamStream } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
-import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -58,7 +54,8 @@ export default function AdminDashboard() {
     time: 60,
     marks: 4,
     neg: 1,
-    skip: 0
+    skip: 0,
+    answerKeyUrl: ''
   });
 
   const [manualQ, setManualQ] = useState<Partial<Question>>({
@@ -134,6 +131,10 @@ export default function AdminDashboard() {
         adminInstructions: `Stream: ${testConfig.examStream}, Class: ${testConfig.classLevel}. ${adminInstructions}`
       });
       
+      if (!Array.isArray(result)) {
+        throw new Error("Invalid response format from AI engine.");
+      }
+
       setImportedQuestions(prev => [...prev, ...result]);
       toast({ title: "Neural Extraction Complete", description: `Successfully analyzed ${result.length} items.` });
     } catch (err: any) {
@@ -141,7 +142,7 @@ export default function AdminDashboard() {
       toast({ 
         variant: "destructive", 
         title: "AI Extraction Error", 
-        description: err.message || "Failed to parse document." 
+        description: "The AI engine encountered an error parsing this document. Try a smaller file or different instructions." 
       });
     } finally {
       setImporting(false);
@@ -166,14 +167,15 @@ export default function AdminDashboard() {
       negativeMarks: testConfig.neg,
       skippedMarks: testConfig.skip,
       isReleased: true,
-      adminId: user.uid
+      adminId: user.uid,
+      answerKeyUrl: testConfig.answerKeyUrl
     };
 
     try {
       await setDoc(doc(db, 'tests', testId), finalTest);
       toast({ title: "Portal Synchronized", description: "Evaluation is now live." });
       setImportedQuestions([]);
-      setTestConfig({ ...testConfig, title: '' });
+      setTestConfig({ ...testConfig, title: '', answerKeyUrl: '' });
     } catch (e) {
       toast({ variant: "destructive", title: "Sync Failure", description: "Database transaction failed." });
     } finally {
@@ -208,7 +210,14 @@ export default function AdminDashboard() {
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Title</Label>
-                  <input placeholder="E.g. JEE-Adv Phase 01" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
+                  <input placeholder="E.g. Phase 01 Evaluation" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Answer Key URL</Label>
+                  <div className="relative">
+                    <Link2 className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <input placeholder="Link to solution PDF" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 pl-10 pr-4 py-2 text-sm" value={testConfig.answerKeyUrl} onChange={e => setTestConfig({...testConfig, answerKeyUrl: e.target.value})} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -300,7 +309,7 @@ export default function AdminDashboard() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Neural Instructions</Label>
                   <Textarea 
-                    placeholder="Give specific parsing rules (e.g. only extract chemistry section)..." 
+                    placeholder="E.g. only extract chemistry section..." 
                     className="rounded-xl bg-muted/20 border-accent/20 min-h-[100px] text-xs font-mono"
                     value={adminInstructions}
                     onChange={e => setAdminInstructions(e.target.value)}

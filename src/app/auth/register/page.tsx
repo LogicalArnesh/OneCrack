@@ -96,7 +96,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
-        setError('This UID is already assigned. Please choose another unique identifier.');
+        setError('This UID is already assigned. Choose another unique ID.');
       } else {
         setError(err.message || 'Identity verification failed.');
       }
@@ -131,7 +131,7 @@ export default function RegisterPage() {
           <div className="space-y-2">
             <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Full Name</Label>
             <Input
-              placeholder="Ex: Arnesh Sharma"
+              placeholder="Ex: Student Name"
               className="rounded-xl h-12 bg-muted/20 border-border"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -144,36 +144,30 @@ export default function RegisterPage() {
             <div className="relative">
               <UserCircle className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Ex: student_alpha_01"
+                placeholder="Ex: user_01"
                 className="pl-12 rounded-xl h-12 bg-muted/20 border-border font-mono font-bold"
                 value={formData.loginUid}
                 onChange={(e) => setFormData({...formData, loginUid: e.target.value.replace(/\s/g, '')})}
                 required
               />
             </div>
-            <p className="text-[9px] text-muted-foreground mt-2 px-1 font-bold">Choosing a permanent, memorable ID is crucial for login access.</p>
+            <p className="text-[9px] text-muted-foreground mt-2 px-1 font-bold">Your permanent ID for all future logins.</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-[10px] uppercase font-black tracking-widest text-primary">Personal Email</Label>
-              <Badge variant="outline" className="text-[8px] h-5 py-0 border-primary/30 text-primary uppercase font-black">Highly Recommended</Badge>
+              <Badge variant="outline" className="text-[8px] h-5 py-0 border-primary/30 text-primary uppercase font-black">Recommended</Badge>
             </div>
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input
                 type="email"
-                placeholder="you@example.com"
+                placeholder="you@domain.com"
                 className="pl-12 rounded-xl h-12 bg-muted/20 border-border"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
-            </div>
-            <div className="flex items-start gap-2.5 p-4 rounded-xl bg-primary/5 border border-primary/20 mt-2">
-              <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-[9px] text-muted-foreground leading-relaxed font-medium">
-                Email is used to dispatch <span className="text-white">Professional Performance Reports</span> and <span className="text-white">Analysis</span>.
-              </p>
             </div>
           </div>
 
