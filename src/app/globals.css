@@ -30,7 +30,7 @@
     --border: 160 100% 12%;
     --input: 160 100% 12%;
     --ring: 185 100% 50%;
-    --radius: 2rem;
+    --radius: 2.5rem;
   }
 }
 
@@ -47,10 +47,6 @@
 
 .neon-text {
   text-shadow: 0 0 10px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.2);
-}
-
-.neon-glow {
-  box-shadow: 0 0 15px -3px hsl(var(--primary) / 0.5);
 }
 
 .shadow-neon {
@@ -90,15 +86,4 @@
 .animate-signal-more-delayed {
   animation: signal-scan 1.8s ease-in-out infinite;
   animation-delay: 0.8s;
-}
-
-.pulse-ring {
-  box-shadow: 0 0 0 0 rgba(185, 100, 50, 0.7);
-  animation: pulse-ring 2s infinite;
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 100, 50, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(185, 100, 50, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 100, 50, 0); }
 }

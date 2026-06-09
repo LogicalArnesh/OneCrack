@@ -360,7 +360,7 @@ export default function TestTakingPage({ params }: { params: Promise<{ id: strin
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span className="text-[9px] font-black uppercase text-primary">Connected to Server</span>
                 </div>
-                <div className="flex items-end gap-1 h-6 items-end">
+                <div className="flex items-end gap-1 h-6">
                   <div className="w-1.5 h-3 bg-primary rounded-t-sm animate-signal" />
                   <div className="w-1.5 h-5 bg-primary rounded-t-sm animate-signal-delayed" />
                   <div className="w-1.5 h-7 bg-primary rounded-t-sm animate-signal-more-delayed" />

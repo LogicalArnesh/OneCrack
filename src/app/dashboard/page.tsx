@@ -16,7 +16,8 @@ import {
   Zap,
   Cpu,
   Database,
-  Wifi
+  Wifi,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -87,11 +88,12 @@ export default function Dashboard() {
           
           {isAdmin && (
             <div className="lg:w-80 flex flex-col gap-4">
-              <Card className="flex-1 rounded-[3rem] bg-primary/10 border-primary/30 flex flex-col items-center justify-center p-8 text-center group cursor-pointer hover:bg-primary/20 transition-all border-dashed" asChild>
+              <Card className="flex-1 rounded-[3rem] bg-primary/10 border-primary/30 border-dashed hover:bg-primary/20 transition-all p-8 flex flex-col items-center justify-center text-center group" asChild>
                 <Link href="/admin">
                   <Zap className="w-12 h-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
-                  <p className="text-xs font-black text-primary uppercase tracking-widest">Evaluation</p>
-                  <p className="text-xl font-headline font-black text-white">FORGE MODE</p>
+                  <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Identity: System Admin</p>
+                  <p className="text-xl font-headline font-black text-white uppercase">Initialize Forge</p>
+                  <ChevronRight className="w-5 h-5 mt-4 text-primary opacity-0 group-hover:opacity-100 transition-all" />
                 </Link>
               </Card>
             </div>
