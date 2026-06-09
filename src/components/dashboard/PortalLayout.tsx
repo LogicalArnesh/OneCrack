@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -66,6 +65,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     router.push('/auth/login');
   };
 
+  const isAdmin = profile?.isAdmin || profile?.loginUid === 'admin';
+
   if (isUserLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -106,7 +107,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   </div>
                   <div className="text-left hidden sm:block">
                     <p className="text-xs font-bold leading-tight">{profile?.name || '...'}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight uppercase font-bold">UID: {profile?.loginUid || '...'}</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight uppercase font-bold">
+                      {isAdmin ? 'SYSTEM ADMINISTRATOR' : `UID: ${profile?.loginUid || '...'}`}
+                    </p>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
