@@ -26,14 +26,6 @@ import {
   ExternalLink,
   ShieldAlert
 } from 'lucide-react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip as ChartTooltip
-} from 'recharts';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -130,12 +122,6 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
   if (!result || !test) return <PortalLayout><div className="flex flex-col items-center justify-center py-32"><AlertCircle className="w-16 h-16 text-destructive mb-6" /><h2 className="text-2xl font-black">Forensic Data Missing</h2></div></PortalLayout>;
 
   const scorePercentage = Math.round((result.totalScore / result.maxScore) * 100);
-  
-  const chartData = [
-    { name: 'Validated', value: result.correctCount, color: 'hsl(var(--primary))' },
-    { name: 'Invalid', value: result.wrongCount, color: 'hsl(var(--destructive))' },
-    { name: 'Skipped', value: result.skippedCount, color: 'hsl(var(--muted-foreground))' },
-  ];
 
   return (
     <PortalLayout>

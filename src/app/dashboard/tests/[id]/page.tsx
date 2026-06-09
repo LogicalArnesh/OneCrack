@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'navigation';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, addDoc, collection } from 'firebase/firestore';
 import { Test, Attempt, User as PortalUser } from '@/lib/types';
