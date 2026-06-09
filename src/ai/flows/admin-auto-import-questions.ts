@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview High-precision Forensic AI Extraction Flow.
- * Optimized for parsing JEE/NEET questions from direct uploads or Drive URLs.
+ * Optimized for parsing JEE/NEET questions with automatic forensic code generation.
  */
 
 import {ai} from '@/ai/genkit';
@@ -50,18 +50,18 @@ const importQuestionsPrompt = ai.definePrompt({
     ]
   },
   system: `You are a Forensic Academic Data Architect. 
-Your mission is to extract questions with 100% precision from provided sources.
+Your mission is to extract academic questions from provided sources (PDFs or URLs) with 100% precision.
 
-STRICT JSON EXTRACTION PROTOCOL:
-1. Identify all questions and their 4 options.
-2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 5672). These MUST be unique per option.
-3. Automatically detect the subject (Physics, Chemistry, Biology, Mathematics).
-4. Use LaTeX for complex formulas.
-5. Identify the correct answer exactly as it appears in the text or provided answer key.
-6. If a URL is provided, treat the content at that link as the primary source of truth for questions and answers.`,
+STRICT PROTOCOL:
+1. Identify all questions and their options.
+2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 5672).
+3. Detect subjects: Physics, Chemistry, Biology, or Mathematics.
+4. Use LaTeX for formulas.
+5. Extract the correct answer strictly as it appears in the text.
+6. If a URL is provided, fetch its content as the primary source of truth.`,
   prompt: `TASK: Extract academic questions and map to forensic codes.
 
-{{#if sourceUrl}}SOURCE URL (FETCH CONTENT): {{{sourceUrl}}}{{/if}}
+{{#if sourceUrl}}SOURCE URL: {{{sourceUrl}}}{{/if}}
 {{#if fileDataUri}}LOCAL SOURCE: {{media url=fileDataUri}}{{/if}}
 INSTRUCTIONS: {{{adminInstructions}}}
 
@@ -77,7 +77,7 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   async (input) => {
     try {
       const {output} = await importQuestionsPrompt(input);
-      if (!output || output.length === 0) throw new Error('Neural pipeline returned zero items. Verify document permissions or URL.');
+      if (!output || output.length === 0) throw new Error('Neural pipeline returned zero items. Verify document readability or URL permissions.');
       
       return output.map(q => ({ 
         ...q, 
