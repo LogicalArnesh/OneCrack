@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -17,7 +18,8 @@ import {
   Cpu,
   Database,
   Wifi,
-  ChevronRight
+  ChevronRight,
+  ClipboardList
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,7 +64,7 @@ export default function Dashboard() {
             <div className="space-y-4 relative z-10">
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="px-4 py-1.5 rounded-xl border-primary/40 bg-primary/5 text-primary text-[10px] font-black tracking-widest uppercase">
-                  {isAdmin ? 'SYSTEM ADMINISTRATOR' : `CLASS ${userProfile?.classLevel || 'AUTH'}`} • ACTIVE
+                  {isAdmin ? 'SYSTEM ADMINISTRATOR' : `ACTIVE CANDIDATE`} • ONLINE
                 </Badge>
                 <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   <div className="flex items-end gap-1 h-3">
@@ -73,7 +75,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <h1 className="text-6xl font-headline font-black text-white tracking-tighter neon-text leading-none">
-                {userProfile?.name?.split(' ')[0] || 'Member'} <span className="text-primary font-headline">Portal</span>
+                {userProfile?.name?.split(' ')[0] || 'Member'} <span className="text-primary font-headline">Sector</span>
               </h1>
               <p className="text-muted-foreground font-medium text-lg max-w-sm">Evaluations are live. Integrity monitoring is active across all sectors.</p>
             </div>
@@ -91,7 +93,7 @@ export default function Dashboard() {
               <Card className="flex-1 rounded-[3rem] bg-primary/10 border-primary/30 border-dashed hover:bg-primary/20 transition-all p-8 flex flex-col items-center justify-center text-center group" asChild>
                 <Link href="/admin">
                   <Zap className="w-12 h-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
-                  <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Identity: System Admin</p>
+                  <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Matrix: System Forge</p>
                   <p className="text-xl font-headline font-black text-white uppercase">Initialize Forge</p>
                   <ChevronRight className="w-5 h-5 mt-4 text-primary opacity-0 group-hover:opacity-100 transition-all" />
                 </Link>
@@ -105,13 +107,10 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                <Database className="w-5 h-5" />
+                <ClipboardList className="w-5 h-5" />
               </div>
-              <h3 className="text-3xl font-headline font-bold">Active Evaluation Queue</h3>
+              <h3 className="text-3xl font-headline font-bold">Available Evaluations</h3>
             </div>
-            <Button asChild variant="link" className="text-xs font-black text-primary uppercase tracking-widest">
-              <Link href="/dashboard/tests">VIEW FULL ARCHIVE <ArrowRight className="w-4 h-4 ml-2" /></Link>
-            </Button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

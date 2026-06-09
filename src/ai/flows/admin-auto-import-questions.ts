@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview High-precision Forensic AI Extraction Flow.
@@ -56,16 +57,16 @@ STRICT PROTOCOL:
 1. Identify all questions and their options.
 2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 5672).
 3. Detect subjects: Physics, Chemistry, Biology, or Mathematics.
-4. Use LaTeX for formulas.
+4. Use LaTeX for formulas where appropriate.
 5. Extract the correct answer strictly as it appears in the text.
-6. If a URL is provided, fetch its content as the primary source of truth.`,
+6. If a URL is provided, it is your primary source of truth. Use it to extract questions.`,
   prompt: `TASK: Extract academic questions and map to forensic codes.
 
 {{#if sourceUrl}}SOURCE URL: {{{sourceUrl}}}{{/if}}
 {{#if fileDataUri}}LOCAL SOURCE: {{media url=fileDataUri}}{{/if}}
 INSTRUCTIONS: {{{adminInstructions}}}
 
-Return a valid JSON array of question objects.`,
+Return a valid JSON array of question objects. If the source is empty or unreadable, return an empty array.`,
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -77,7 +78,10 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   async (input) => {
     try {
       const {output} = await importQuestionsPrompt(input);
-      if (!output || output.length === 0) throw new Error('Neural pipeline returned zero items. Verify document readability or URL permissions.');
+      if (!output || output.length === 0) {
+        // Return an empty array if nothing found instead of throwing immediately to allow UI handling
+        return [];
+      }
       
       return output.map(q => ({ 
         ...q, 
@@ -86,7 +90,7 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
       }));
     } catch (error: any) {
       console.error("AI Neural Error:", error);
-      throw new Error(error.message || "Forensic extraction pipeline failed.");
+      throw new Error(error.message || "Forensic extraction pipeline failed. Please verify Drive link permissions or file readability.");
     }
   }
 );
