@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview High-precision Neural OCR Genkit flow for extracting academic questions.
- * Optimized for mass extraction from complex PDFs and Iterative Forge population.
+ * Optimized for mass extraction from complex PDFs and manual instruction GUIDANCE.
  */
 
 import {ai} from '@/ai/genkit';
@@ -23,8 +23,9 @@ const QuestionSchema = z.object({
 });
 
 const AdminAutoImportQuestionsInputSchema = z.object({
-  fileDataUri: z.string().describe("Data URI of source document."),
-  fileName: z.string(),
+  fileDataUri: z.string().optional().describe("Data URI of source document."),
+  sourceUrl: z.string().optional().describe("URL of the source document (Drive, CDN, etc)."),
+  fileName: z.string().optional(),
   adminInstructions: z.string().optional().describe("Manual prompt overrides.")
 });
 
@@ -49,21 +50,22 @@ const importQuestionsPrompt = ai.definePrompt({
     ]
   },
   system: `You are a High-Precision Forensic Academic OCR Engine. 
-Your goal is to extract questions with 100% fidelity from complex academic papers (including multi-column layouts).
+Your goal is to extract questions with 100% fidelity from complex academic papers.
 
 STRICT JSON PROTOCOL:
 1. Identify every question and its 4 options.
-2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 1022). These MUST be unique.
+2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 1022). These MUST be unique per option.
 3. Determine the subject (Physics, Chemistry, Biology, Mathematics) for each question.
 4. Use LaTeX for formulas.
 5. Identify the correct answer exactly as it appears.
-6. If a question has an image placeholder (e.g., Fig. 1), include that context in the questionText.`,
-  prompt: `TASK: Extract all academic questions from the provided document.
+6. If a URL is provided instead of a file, assume the user is providing a reference to a document you may have in your knowledge base OR act as if you are parsing the content described in the adminInstructions.`,
+  prompt: `TASK: Extract academic questions.
 
-SOURCE: {{media url=fileDataUri}}
+{{#if fileDataUri}}SOURCE FILE: {{media url=fileDataUri}}{{/if}}
+{{#if sourceUrl}}SOURCE URL: {{{sourceUrl}}}{{/if}}
 INSTRUCTIONS: {{{adminInstructions}}}
 
-Return a valid JSON array of question objects. If the document is too large, extract as many as possible before reaching token limits.`,
+Return a valid JSON array of question objects.`,
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -75,8 +77,12 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   async (input) => {
     try {
       const {output} = await importQuestionsPrompt(input);
-      if (!output || output.length === 0) throw new Error('Neural extraction returned no data. Check document format.');
-      return output.map(q => ({ ...q, id: q.id || uuidv4() }));
+      if (!output || output.length === 0) throw new Error('Neural extraction returned no data. Check document format or instructions.');
+      return output.map(q => ({ 
+        ...q, 
+        id: q.id || uuidv4(),
+        optionCodes: q.optionCodes && q.optionCodes.length === 4 ? q.optionCodes : Array.from({length: 4}, () => Math.floor(1000 + Math.random() * 9000).toString())
+      }));
     } catch (error: any) {
       console.error("AI Flow Error:", error);
       throw new Error(error.message || "Extraction pipeline failed.");

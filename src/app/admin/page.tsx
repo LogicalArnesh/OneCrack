@@ -51,6 +51,7 @@ export default function AdminForge() {
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adminInstructions, setAdminInstructions] = useState('Extract all questions with 4 options. Use forensic codes.');
+  const [sourceUrl, setSourceUrl] = useState('');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
@@ -129,14 +130,15 @@ export default function AdminForge() {
   };
 
   const runAIImport = async () => {
-    if (!sourceFiles.questions.dataUri) {
-      toast({ variant: "destructive", title: "Source Missing", description: "Upload a document to initialize extraction." });
+    if (!sourceFiles.questions.dataUri && !sourceUrl) {
+      toast({ variant: "destructive", title: "Source Missing", description: "Upload a document or provide a Drive URL to initialize extraction." });
       return;
     }
     setImporting(true);
     try {
       const result = await adminAutoImportQuestions({
-        fileDataUri: sourceFiles.questions.dataUri,
+        fileDataUri: sourceFiles.questions.dataUri || undefined,
+        sourceUrl: sourceUrl || undefined,
         fileName: sourceFiles.questions.file?.name || 'source.pdf',
         adminInstructions: `Target Stream: ${testConfig.examStream}, Class Level: ${testConfig.classLevel}. Custom Prompt: ${adminInstructions}`
       });
@@ -153,7 +155,7 @@ export default function AdminForge() {
       toast({ 
         variant: "destructive", 
         title: "Neural Pipeline Error", 
-        description: err.message || "Failed to parse document." 
+        description: err.message || "Failed to parse document. Check instructions or format." 
       });
     } finally {
       setImporting(false);
@@ -304,6 +306,20 @@ export default function AdminForge() {
                     </div>}
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Drive / Source URL</Label>
+                  <div className="relative">
+                    <Link2 className="absolute left-4 top-4.5 h-4 w-4 text-muted-foreground" />
+                    <input 
+                      placeholder="Paste Drive link for AI reference..." 
+                      className="flex h-14 w-full rounded-2xl border border-input bg-muted/10 pl-12 pr-5 text-sm font-medium" 
+                      value={sourceUrl} 
+                      onChange={e => setSourceUrl(e.target.value)} 
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-accent/70 tracking-widest">Neural Instructions</Label>
                    <Textarea 
@@ -313,7 +329,7 @@ export default function AdminForge() {
                      onChange={e => setAdminInstructions(e.target.value)}
                    />
                 </div>
-                <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-16 rounded-[2rem] font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
+                <Button onClick={runAIImport} disabled={importing || (!sourceFiles.questions.dataUri && !sourceUrl)} className="w-full h-16 rounded-[2rem] font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Zap className="w-5 h-5 mr-3" />}
                   {importing ? "EXTRACTING..." : "RUN NEURAL EXTRACTION"}
                 </Button>
