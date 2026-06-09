@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -12,11 +11,9 @@ import { Test, User as PortalUser } from '@/lib/types';
 import { 
   Activity, 
   Clock,
-  ArrowRight,
   ShieldCheck,
   Zap,
   Cpu,
-  Database,
   Wifi,
   ChevronRight,
   ClipboardList
@@ -55,7 +52,7 @@ export default function Dashboard() {
   return (
     <PortalLayout>
       <div className="space-y-12 pb-24 max-w-7xl mx-auto">
-        {/* Status Hero */}
+        {/* Simplified Status Hero */}
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 flex flex-col md:flex-row md:items-end justify-between gap-8 bg-card/20 p-10 rounded-[3rem] border border-border shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-1000">
@@ -64,7 +61,7 @@ export default function Dashboard() {
             <div className="space-y-4 relative z-10">
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="px-4 py-1.5 rounded-xl border-primary/40 bg-primary/5 text-primary text-[10px] font-black tracking-widest uppercase">
-                  {isAdmin ? 'SYSTEM ADMINISTRATOR' : `ACTIVE CANDIDATE`} • ONLINE
+                  {isAdmin ? 'SYSTEM ADMINISTRATOR' : 'ACTIVE CANDIDATE'} • ONLINE
                 </Badge>
                 <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   <div className="flex items-end gap-1 h-3">
@@ -109,7 +106,7 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                 <ClipboardList className="w-5 h-5" />
               </div>
-              <h3 className="text-3xl font-headline font-bold">Available Evaluations</h3>
+              <h3 className="text-3xl font-headline font-bold">Active Evaluations</h3>
             </div>
           </div>
           

@@ -23,8 +23,7 @@ import {
   Printer,
   FileText,
   CheckCircle,
-  ExternalLink,
-  ShieldAlert
+  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -82,9 +81,9 @@ export default function ResultDetailsPage({ params }: { params: Promise<{ id: st
   const downloadForensicAudit = () => {
     if (!result || !test) return;
 
-    // STUDENT AUDIT: Contains IDs and Codes, NOT question text (per instruction)
+    // STUDENT AUDIT: Contains IDs and Codes, NOT question text (KEEPING IT SECURE)
     const csvContent = [
-      ["ONE CRACK CERTIFIED PERFORMANCE AUDIT (STUDENT COPY)"],
+      ["ONE CRACK CERTIFIED PERFORMANCE AUDIT (FORENSIC COPY)"],
       [`Response ID (Submission Hash): ${result.submissionId}`],
       [`Portal Protocol: ${test.title}`],
       [`Candidate: ${profile?.name} (${profile?.loginUid})`],
