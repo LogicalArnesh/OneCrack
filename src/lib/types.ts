@@ -1,5 +1,6 @@
 export type ClassLevel = '10' | '11' | '12' | 'Dropper';
 export type Subject = 'Biology' | 'Mathematics' | 'Both' | 'Physics' | 'Chemistry' | 'General';
+export type ExamStream = 'JEE' | 'NEET' | 'General';
 export type QuestionType = 'MCQ' | 'AssertionReason' | 'ImageMCQ' | 'ShortAnswer' | 'LongAnswer';
 
 export interface User {
@@ -8,6 +9,7 @@ export interface User {
   loginUid: string;
   classLevel: ClassLevel;
   subjectPreference?: Subject;
+  examStream?: ExamStream;
   email?: string;
   registrationDate: string;
   isAdmin?: boolean;
@@ -31,6 +33,7 @@ export interface Test {
   title: string;
   description: string;
   subject: string;
+  examStream: ExamStream;
   classLevel: ClassLevel;
   questions: Question[];
   totalTimeMinutes: number;

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/select';
 import { Textarea } from '@/components/ui/textarea';
 import { adminAutoImportQuestions } from '@/ai/flows/admin-auto-import-questions';
 import { useToast } from '@/hooks/use-toast';
@@ -27,11 +27,13 @@ import {
   X,
   BrainCircuit,
   Terminal,
-  FileSearch
+  FileSearch,
+  Activity,
+  Cpu
 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { Question, ClassLevel, Test, QuestionType, Subject } from '@/lib/types';
+import { Question, ClassLevel, Test, QuestionType, Subject, ExamStream } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 
@@ -41,17 +43,17 @@ export default function AdminDashboard() {
   const db = useFirestore();
   
   const qInputRef = useRef<HTMLInputElement>(null);
-  const aInputRef = useRef<HTMLInputElement>(null);
 
   const [importing, setImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adminInstructions, setAdminInstructions] = useState('Extract all questions with their 4 options. Identify the correct answer from the context. Subject is Physics.');
+  const [adminInstructions, setAdminInstructions] = useState('Detect subject automatically. Extract all questions and their 4 options. Identify correct answer from context.');
   
   const [testConfig, setTestConfig] = useState({
     title: '',
-    subject: 'Biology' as Subject,
+    examStream: 'JEE' as ExamStream,
+    subject: 'General' as Subject,
     classLevel: '12' as ClassLevel,
     time: 60,
     marks: 4,
@@ -71,13 +73,11 @@ export default function AdminDashboard() {
 
   const [sourceFiles, setSourceFiles] = useState<{
     questions: { file: File | null; dataUri: string | null };
-    answerKey: { file: File | null; dataUri: string | null };
   }>({
-    questions: { file: null, dataUri: null },
-    answerKey: { file: null, dataUri: null }
+    questions: { file: null, dataUri: null }
   });
 
-  const handleFileChange = (type: 'questions' | 'answerKey') => async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -88,21 +88,16 @@ export default function AdminDashboard() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      setSourceFiles(prev => ({
-        ...prev,
-        [type]: { file, dataUri: reader.result as string }
-      }));
+      setSourceFiles({
+        questions: { file, dataUri: reader.result as string }
+      });
     };
     reader.readAsDataURL(file);
   };
 
-  const removeFile = (type: 'questions' | 'answerKey') => {
-    setSourceFiles(prev => ({
-      ...prev,
-      [type]: { file: null, dataUri: null }
-    }));
-    if (type === 'questions' && qInputRef.current) qInputRef.current.value = '';
-    if (type === 'answerKey' && aInputRef.current) aInputRef.current.value = '';
+  const removeFile = () => {
+    setSourceFiles({ questions: { file: null, dataUri: null } });
+    if (qInputRef.current) qInputRef.current.value = '';
   };
 
   const addManualQuestion = () => {
@@ -135,34 +130,22 @@ export default function AdminDashboard() {
     try {
       const result = await adminAutoImportQuestions({
         fileDataUri: sourceFiles.questions.dataUri,
-        answerKeyDataUri: sourceFiles.answerKey.dataUri || undefined,
         fileName: sourceFiles.questions.file?.name || 'source.pdf',
-        adminInstructions: `Subject: ${testConfig.subject}, Class: ${testConfig.classLevel}. ${adminInstructions}`
+        adminInstructions: `Stream: ${testConfig.examStream}, Class: ${testConfig.classLevel}. ${adminInstructions}`
       });
       
-      const formatted = result.map(q => ({
-        ...q,
-        classLevel: testConfig.classLevel as ClassLevel
-      }));
-      
-      setImportedQuestions(prev => [...prev, ...formatted]);
+      setImportedQuestions(prev => [...prev, ...result]);
       toast({ title: "Neural Extraction Complete", description: `Successfully analyzed ${result.length} items.` });
     } catch (err: any) {
       console.error(err);
       toast({ 
         variant: "destructive", 
         title: "AI Extraction Error", 
-        description: err.message || "Failed to parse document. Ensure PDF is readable." 
+        description: err.message || "Failed to parse document." 
       });
     } finally {
       setImporting(false);
     }
-  };
-
-  const saveEdit = (id: string, updatedQ: Question) => {
-    setImportedQuestions(prev => prev.map(q => q.id === id ? updatedQ : q));
-    setEditingId(null);
-    toast({ title: "Audit Updated", description: "Question modification saved to staging bank." });
   };
 
   const publishTest = async () => {
@@ -172,8 +155,9 @@ export default function AdminDashboard() {
     const finalTest: Test = {
       id: testId,
       title: testConfig.title || "Elite Academic Evaluation",
-      description: `${testConfig.subject} High-Integrity Test - Class ${testConfig.classLevel}`,
+      description: `${testConfig.examStream} High-Integrity Test - Class ${testConfig.classLevel}`,
       subject: testConfig.subject,
+      examStream: testConfig.examStream,
       classLevel: testConfig.classLevel,
       questions: importedQuestions,
       totalTimeMinutes: testConfig.time,
@@ -187,11 +171,11 @@ export default function AdminDashboard() {
 
     try {
       await setDoc(doc(db, 'tests', testId), finalTest);
-      toast({ title: "Portal Synchronized", description: "Evaluation is now live for all students." });
+      toast({ title: "Portal Synchronized", description: "Evaluation is now live." });
       setImportedQuestions([]);
       setTestConfig({ ...testConfig, title: '' });
     } catch (e) {
-      toast({ variant: "destructive", title: "Sync Failure", description: "Failed to finalize database transaction." });
+      toast({ variant: "destructive", title: "Sync Failure", description: "Database transaction failed." });
     } finally {
       setIsPublishing(false);
     }
@@ -209,7 +193,7 @@ export default function AdminDashboard() {
           </div>
           <Button onClick={publishTest} disabled={isPublishing || importedQuestions.length === 0} className="rounded-2xl h-16 px-10 font-black bg-primary text-black shadow-neon transition-transform active:scale-95 uppercase tracking-widest text-xs">
             {isPublishing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Plus className="w-5 h-5 mr-2" />}
-            Finalize & Sync Portal
+            Finalize Evaluation
           </Button>
         </div>
 
@@ -218,48 +202,57 @@ export default function AdminDashboard() {
             <Card className="rounded-[2.5rem] border-border bg-card/40 backdrop-blur-xl shadow-2xl">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <Settings2 className="w-5 h-5 text-primary" /> Global Matrix
+                  <Settings2 className="w-5 h-5 text-primary" /> Matrix Configuration
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Identifier</Label>
-                  <input placeholder="E.g. JEE-Adv Phase 01" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm focus:ring-1 focus:ring-primary" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Test Title</Label>
+                  <input placeholder="E.g. JEE-Adv Phase 01" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.title} onChange={e => setTestConfig({...testConfig, title: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Subject</Label>
-                    <Select value={testConfig.subject} onValueChange={v => setTestConfig({...testConfig, subject: v as Subject})}>
+                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Exam Stream</Label>
+                    <Select value={testConfig.examStream} onValueChange={v => setTestConfig({...testConfig, examStream: v as ExamStream})}>
                       <SelectTrigger className="rounded-xl h-12 bg-muted/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Biology">Biology</SelectItem>
-                        <SelectItem value="Physics">Physics</SelectItem>
-                        <SelectItem value="Chemistry">Chemistry</SelectItem>
-                        <SelectItem value="Mathematics">Mathematics</SelectItem>
+                        <SelectItem value="JEE">JEE (PCM)</SelectItem>
+                        <SelectItem value="NEET">NEET (PCB)</SelectItem>
                         <SelectItem value="General">General</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Class Level</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Target Class</Label>
                     <Select value={testConfig.classLevel} onValueChange={v => setTestConfig({...testConfig, classLevel: v as ClassLevel})}>
                       <SelectTrigger className="rounded-xl h-12 bg-muted/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="11">11</SelectItem>
-                        <SelectItem value="12">12</SelectItem>
+                        <SelectItem value="10">Class 10</SelectItem>
+                        <SelectItem value="11">Class 11</SelectItem>
+                        <SelectItem value="12">Class 12</SelectItem>
                         <SelectItem value="Dropper">Dropper</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Duration (Minutes)</Label>
-                  <input type="number" className="flex h-12 w-full rounded-xl border border-input bg-muted/20 px-4 py-2 text-sm" value={testConfig.time} onChange={e => setTestConfig({...testConfig, time: parseInt(e.target.value) || 0})} />
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Primary Subject</Label>
+                  <Select value={testConfig.subject} onValueChange={v => setTestConfig({...testConfig, subject: v as Subject})}>
+                    <SelectTrigger className="rounded-xl h-12 bg-muted/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Physics">Physics</SelectItem>
+                      <SelectItem value="Chemistry">Chemistry</SelectItem>
+                      <SelectItem value="Mathematics">Mathematics</SelectItem>
+                      <SelectItem value="Biology">Biology</SelectItem>
+                      <SelectItem value="General">General</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2 text-center">
@@ -287,15 +280,15 @@ export default function AdminDashboard() {
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Source Document</Label>
+                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Source PDF/Doc</Label>
                     {sourceFiles.questions.file && (
-                      <button onClick={() => removeFile('questions')} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
+                      <button onClick={removeFile} className="text-[9px] font-black text-destructive hover:underline flex items-center gap-1">
                         <FileX className="w-3 h-3" /> REMOVE
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <Input ref={qInputRef} type="file" onChange={handleFileChange('questions')} accept=".pdf,.docx" className="rounded-xl h-12 bg-muted/20 cursor-pointer border-dashed border-accent/30" />
+                    <Input ref={qInputRef} type="file" onChange={handleFileChange} accept=".pdf,.docx" className="rounded-xl h-12 bg-muted/20 border-dashed border-accent/30" />
                     {sourceFiles.questions.file && <div className="absolute inset-0 bg-background rounded-xl flex items-center px-4 gap-3 border border-accent/40">
                       <FileText className="w-5 h-5 text-accent" />
                       <span className="text-xs font-bold truncate flex-1">{sourceFiles.questions.file.name}</span>
@@ -306,20 +299,17 @@ export default function AdminDashboard() {
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Neural Instructions</Label>
-                  <div className="relative">
-                    <Terminal className="absolute left-3 top-3 w-4 h-4 text-accent/50" />
-                    <Textarea 
-                      placeholder="Give specific parsing rules..." 
-                      className="rounded-xl bg-muted/20 border-accent/20 pl-10 min-h-[100px] text-xs font-mono"
-                      value={adminInstructions}
-                      onChange={e => setAdminInstructions(e.target.value)}
-                    />
-                  </div>
+                  <Textarea 
+                    placeholder="Give specific parsing rules (e.g. only extract chemistry section)..." 
+                    className="rounded-xl bg-muted/20 border-accent/20 min-h-[100px] text-xs font-mono"
+                    value={adminInstructions}
+                    onChange={e => setAdminInstructions(e.target.value)}
+                  />
                 </div>
 
                 <Button onClick={runAIImport} disabled={importing || !sourceFiles.questions.dataUri} className="w-full h-14 rounded-2xl font-black bg-accent/10 text-accent hover:bg-accent hover:text-black border border-accent/30 uppercase tracking-widest text-[10px]">
                   {importing ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Wand2 className="w-5 h-5 mr-3" />}
-                  {importing ? 'Neural Analysis Active...' : 'Initialize Forensic Extraction'}
+                  Initialize Extraction
                 </Button>
               </CardContent>
             </Card>
@@ -334,7 +324,7 @@ export default function AdminDashboard() {
                 </TabsList>
                 {importedQuestions.length > 0 && (
                   <div className="px-6 py-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    <Activity className="w-4 h-4 text-primary animate-pulse" />
                     <span className="text-[10px] font-black text-primary uppercase tracking-widest">{importedQuestions.length} Items Indexed</span>
                   </div>
                 )}
@@ -346,68 +336,41 @@ export default function AdminDashboard() {
                     <Card key={q.id} className="rounded-[2rem] border-border bg-card/20 hover:bg-card/40 transition-all group overflow-hidden">
                       {editingId === q.id ? (
                         <div className="p-8 space-y-6">
-                           <div className="space-y-3">
-                              <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Text</Label>
-                              <Textarea 
-                                className="rounded-xl bg-muted/30" 
-                                defaultValue={q.questionText} 
-                                onBlur={(e) => {
-                                  const updated = { ...q, questionText: e.target.value };
-                                  setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
-                                }}
-                              />
-                           </div>
+                           <Textarea className="rounded-xl bg-muted/30" defaultValue={q.questionText} onBlur={(e) => {
+                             const updated = { ...q, questionText: e.target.value };
+                             setImportedQuestions(prev => prev.map(item => item.id === q.id ? updated : item));
+                           }} />
                            <div className="grid grid-cols-2 gap-4">
                               {q.options?.map((opt, i) => (
-                                <div key={i} className="space-y-1">
-                                  <Label className="text-[9px] uppercase font-bold opacity-50">Option {String.fromCharCode(65+i)}</Label>
-                                  <Input 
-                                    className="rounded-xl bg-muted/30" 
-                                    defaultValue={opt}
-                                    onBlur={(e) => {
-                                      const newOpts = [...(q.options || [])];
-                                      newOpts[i] = e.target.value;
-                                      setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, options: newOpts } : item));
-                                    }}
-                                  />
-                                </div>
+                                <Input key={i} className="rounded-xl bg-muted/30" defaultValue={opt} onBlur={(e) => {
+                                  const newOpts = [...(q.options || [])];
+                                  newOpts[i] = e.target.value;
+                                  setImportedQuestions(prev => prev.map(item => item.id === q.id ? { ...item, options: newOpts } : item));
+                                }} />
                               ))}
                            </div>
-                           <div className="flex items-center gap-4">
-                              <Button size="sm" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-bold uppercase text-[9px]">
-                                <Save className="w-3 h-3 mr-2" /> Save Audit
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="rounded-xl font-bold uppercase text-[9px]">
-                                <X className="w-3 h-3 mr-2" /> Cancel
-                              </Button>
-                           </div>
+                           <Button size="sm" onClick={() => setEditingId(null)} className="rounded-xl bg-primary text-black font-bold">Save Changes</Button>
                         </div>
                       ) : (
-                        <div className="p-8 flex flex-col md:flex-row gap-8">
+                        <div className="p-8 flex items-start gap-8">
                           <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-white/5 flex items-center justify-center font-black text-xl shrink-0 text-primary">
                             {(idx + 1).toString().padStart(2, '0')}
                           </div>
                           <div className="flex-1 space-y-4">
                             <h4 className="font-bold text-xl leading-snug text-white/90">{q.questionText}</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                               {q.options?.map((opt, i) => (
                                 <div key={i} className={`p-4 rounded-xl border text-sm font-bold flex items-center gap-3 ${opt === q.correctAnswer ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-muted/10 border-white/5 text-muted-foreground'}`}>
-                                  <span className={cn("w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black", opt === q.correctAnswer ? "bg-primary text-black" : "bg-white/5")}>
-                                    {String.fromCharCode(65 + i)}
-                                  </span>
+                                  <span className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-[10px]">{String.fromCharCode(65 + i)}</span>
                                   <div className="flex-1 truncate">{opt}</div>
-                                  {q.optionCodes?.[i] && <span className="text-[9px] opacity-40 font-mono">[{q.optionCodes[i]}]</span>}
+                                  <span className="text-[9px] opacity-40 font-mono">[{q.optionCodes?.[i]}]</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                           <div className="flex flex-col gap-2">
-                             <Button variant="ghost" size="icon" className="text-primary h-12 w-12 rounded-xl" onClick={() => setEditingId(q.id)}>
-                              <Edit3 className="w-5 h-5" />
-                            </Button>
-                             <Button variant="ghost" size="icon" className="text-destructive h-12 w-12 rounded-xl" onClick={() => setImportedQuestions(prev => prev.filter(item => item.id !== q.id))}>
-                              <Trash2 className="w-5 h-5" />
-                            </Button>
+                             <Button variant="ghost" size="icon" className="text-primary" onClick={() => setEditingId(q.id)}><Edit3 className="w-5 h-5" /></Button>
+                             <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setImportedQuestions(prev => prev.filter(item => item.id !== q.id))}><Trash2 className="w-5 h-5" /></Button>
                           </div>
                         </div>
                       )}
@@ -416,8 +379,7 @@ export default function AdminDashboard() {
                   {importedQuestions.length === 0 && (
                     <div className="py-40 text-center border-2 border-dashed rounded-[3rem] border-white/10 text-muted-foreground opacity-40">
                       <FileSearch className="w-20 h-20 mx-auto mb-6" />
-                      <p className="font-black uppercase tracking-widest text-sm">Audit Forge Is Idle</p>
-                      <p className="text-[10px] uppercase mt-2">Upload a source document to initialize neural parsing</p>
+                      <p className="font-black uppercase tracking-widest text-sm">Staging Bank Is Idle</p>
                     </div>
                   )}
                 </div>
@@ -427,52 +389,25 @@ export default function AdminDashboard() {
                 <Card className="rounded-[3rem] border-border bg-card/40 p-12">
                   <div className="space-y-8">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Body</Label>
+                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Question Content</Label>
                       <Textarea 
-                        placeholder="Type question content..." 
+                        placeholder="Type question text..." 
                         className="rounded-2xl min-h-[150px] bg-muted/20 text-lg font-medium border-primary/20" 
                         value={manualQ.questionText}
                         onChange={e => setManualQ({...manualQ, questionText: e.target.value})}
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-6">
                       {(manualQ.options || ['', '', '', '']).map((opt, i) => (
-                        <div key={i} className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Option {String.fromCharCode(65 + i)}</Label>
-                          <Input 
-                            value={opt} 
-                            onChange={e => {
-                              const newOpts = [...(manualQ.options || ['', '', '', ''])];
-                              newOpts[i] = e.target.value;
-                              setManualQ({...manualQ, options: newOpts});
-                            }}
-                            className="rounded-xl h-12 bg-muted/20"
-                          />
-                        </div>
+                        <Input key={i} placeholder={`Option ${String.fromCharCode(65 + i)}`} className="rounded-xl h-12 bg-muted/20" value={opt} onChange={e => {
+                          const newOpts = [...(manualQ.options || ['', '', '', ''])];
+                          newOpts[i] = e.target.value;
+                          setManualQ({...manualQ, options: newOpts});
+                        }} />
                       ))}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Correct Answer Reference</Label>
-                        <Input 
-                          placeholder="Exact match of option text" 
-                          className="rounded-xl h-12 bg-muted/20 border-primary/20"
-                          value={manualQ.correctAnswer}
-                          onChange={e => setManualQ({...manualQ, correctAnswer: e.target.value})}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Forensic Explanation</Label>
-                        <Input 
-                          placeholder="Internal logic reference" 
-                          className="rounded-xl h-12 bg-muted/20"
-                          value={manualQ.explanation}
-                          onChange={e => setManualQ({...manualQ, explanation: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={addManualQuestion} className="w-full h-16 rounded-2xl font-black bg-primary text-black shadow-neon transition-all hover:scale-[1.02] uppercase tracking-widest text-xs">
-                      <Plus className="w-5 h-5 mr-3" /> Insert into Staging Bank
+                    <Button onClick={addManualQuestion} className="w-full h-16 rounded-2xl font-black bg-primary text-black uppercase tracking-widest text-xs">
+                      Insert Into Bank
                     </Button>
                   </div>
                 </Card>

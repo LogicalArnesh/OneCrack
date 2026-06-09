@@ -23,9 +23,6 @@ In the Netlify Dashboard (**Site Settings > Environment Variables**), add the fo
 | `SMTP_USER` | `onecracktestportal@gmail.com` | Sender address for test reports |
 | `SMTP_PASS` | `bgng slvy xkow zyii` | Gmail App Password for secure sending |
 
-### 👤 Admin Access
-- **Email**: `onecracktestportal@gmail.com`
-- **Passcode**: `000008`
 
 ## Features
 - **Custom Student UID**: Students choose their own unique identifier for faster login.

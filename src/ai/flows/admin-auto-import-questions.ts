@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview High-precision Neural OCR Genkit flow for extracting academic questions.
- * Enforces strict formatting and 4-digit forensic option codes for high-fidelity evaluation.
+ * Optimized for JEE/NEET streams and forensic option tracking.
  */
 
 import {ai} from '@/ai/genkit';
@@ -12,21 +12,20 @@ const QuestionTypeSchema = z.enum(['MCQ', 'AssertionReason', 'ImageMCQ', 'ShortA
 
 const QuestionSchema = z.object({
   id: z.string().optional(),
-  questionNumber: z.number().describe("The sequential number from the document."),
-  questionText: z.string().describe("The full question body including any context or formulas."),
+  questionNumber: z.number().describe("Sequential index."),
+  questionText: z.string().describe("Full question body with context."),
   questionType: QuestionTypeSchema.default('MCQ'),
   options: z.array(z.string()).describe("Exactly 4 distinct answer options."),
-  optionCodes: z.array(z.string()).describe("4 unique generated 4-digit numeric codes (e.g. 1021, 1022, 1023, 1024)."),
-  correctAnswer: z.string().describe("The exact text of the correct option as it appears in the options list."),
-  subject: z.string().describe("Identified subject (Physics/Chemistry/Mathematics/Biology/General)."),
-  explanation: z.string().optional().describe("Detailed solution logic or explanation for the correct answer.")
+  optionCodes: z.array(z.string()).describe("4 unique generated 4-digit numeric codes."),
+  correctAnswer: z.string().describe("Exact text of the correct option."),
+  subject: z.string().describe("Detected subject (Physics/Chemistry/Biology/Mathematics/General)."),
+  explanation: z.string().optional().describe("Solution logic.")
 });
 
 const AdminAutoImportQuestionsInputSchema = z.object({
-  fileDataUri: z.string().describe("Data URI of the source PDF/DOCX."),
-  answerKeyDataUri: z.string().optional().describe("Data URI of the key if separate."),
+  fileDataUri: z.string().describe("Data URI of source document."),
   fileName: z.string(),
-  adminInstructions: z.string().optional().describe("Specific instructions from the admin for the AI.")
+  adminInstructions: z.string().optional().describe("Neural override instructions.")
 });
 
 const AdminAutoImportQuestionsOutputSchema = z.array(QuestionSchema);
@@ -49,25 +48,21 @@ const importQuestionsPrompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
     ]
   },
-  system: `You are a Forensic Academic OCR Engine specialized in high-stakes examination parsing (JEE/NEET/Advanced).
-Your goal is to extract questions and options with 100% fidelity.
+  system: `You are a High-Precision Forensic Academic OCR Engine. 
+Your goal is to extract questions with 100% fidelity.
 
-STRICT JSON OUTPUT PROTOCOL:
-1. Identify every question block.
-2. For every question, you MUST generate 4 unique, random 4-digit numeric codes (e.g. 1021, 1022, 1023, 1024). These codes MUST be different for every option in the entire set.
-3. The 'correctAnswer' must EXACTLY match one of the strings in the 'options' array.
-4. If options are labeled (A, B, C, D), extract the text following the labels.
-5. Use LaTeX-style notation for any mathematical formulas.`,
-  prompt: `TASK: Identify and extract every question and its associated options from the provided source document.
+STRICT JSON PROTOCOL:
+1. Identify every question and its 4 options.
+2. For EVERY option, generate a unique 4-digit numeric code (e.g. 1021, 1022). These MUST be unique across the entire document.
+3. Determine the subject (Physics, Chemistry, Biology, Mathematics) for each question based on context.
+4. Use LaTeX for formulas.
+5. Identify the correct answer exactly as it appears in the options.`,
+  prompt: `TASK: Extract all academic questions from the provided source.
 
-INPUTS:
-- Source Document: {{media url=fileDataUri}}
-{{#if answerKeyDataUri}}
-- External Answer Key: {{media url=answerKeyDataUri}}
-{{/if}}
-- Admin Context/Instructions: {{{adminInstructions}}}
+SOURCE: {{media url=fileDataUri}}
+INSTRUCTIONS: {{{adminInstructions}}}
 
-Return a valid JSON array of question objects following the schema. Ensure the response is a valid JSON array and nothing else.`,
+Return a valid JSON array of question objects.`,
 });
 
 const adminAutoImportQuestionsFlow = ai.defineFlow(
@@ -79,18 +74,11 @@ const adminAutoImportQuestionsFlow = ai.defineFlow(
   async (input) => {
     try {
       const {output} = await importQuestionsPrompt(input);
-      
-      if (!output || !Array.isArray(output) || output.length === 0) {
-        throw new Error('Neural engine returned an empty set. Ensure the PDF contains text-based or clearly legible questions.');
-      }
-      
-      return output.map(q => ({
-        ...q,
-        id: q.id || uuidv4()
-      }));
+      if (!output) throw new Error('Neural extraction failed.');
+      return output.map(q => ({ ...q, id: q.id || uuidv4() }));
     } catch (error: any) {
       console.error("AI Flow Error:", error);
-      throw new Error(error.message || "Internal Extraction Failure. Check API key and document format.");
+      throw new Error(error.message || "Extraction failed.");
     }
   }
 );
